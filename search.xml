@@ -1,6 +1,157 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>大模型基础</title>
+    <url>/posts/2a1e6489.html</url>
+    <content><![CDATA[<h1 id="显卡"><a href="#显卡" class="headerlink" title="显卡"></a>显卡</h1><blockquote>
+<p>GPU&#x2F;CPU、CUDA、TPU&#x2F;苹果、各种常见显卡介绍</p>
+</blockquote>
+<ol>
+<li>CPU：通用，穿行强，AI计算慢，费电</li>
+<li>GPU：并行强，功耗大，面积大</li>
+<li>CUDA：指挥GPU干活的语言</li>
+<li>TPU：Tensor Processing Unit 张量处理器，Genmini生态，云端&#x2F;数据中心，高并发高算力高功耗</li>
+<li>NPU：Nerual Processing Unit 神经网络处理器，AI专用，硬件级优化矩阵乘加（MAC），低延迟，高效能比，手机&#x2F;PC&#x2F;摄像头，华为&#x2F;苹果&#x2F;高通，低功耗实时推理<br><img src="https://fqtypora-test.oss-cn-chengdu.aliyuncs.com/20260407190531.png" alt="image.png"></li>
+</ol>
+<h1 id="模型量化、加速、剪枝"><a href="#模型量化、加速、剪枝" class="headerlink" title="模型量化、加速、剪枝"></a>模型量化、加速、剪枝</h1><ul>
+<li>模型量化：把模型中原本使用的高精度浮点数（FP32）表示的权重和激活值映射到低精度（FP16&#x2F;BF16&#x2F;INT8&#x2F;INT4），下面是一些基础量化方法：<ul>
+<li>PTQ 训练后量化——模型训练完成后直接对权重进行转换，优点：速度快；缺点：在极低精度下有明显的精度损失</li>
+<li>QAT 量化感知训练——在模型训练或微调的最后阶段，在前向传播中模拟量化误差，通过反向传播让模型学习适应误差；优点：精度保持得好；缺点计算成本较高</li>
+</ul>
+</li>
+<li>LLM的前沿量化方法：<ul>
+<li>GPTQ：一种基于二阶量化（Hessian矩阵）的weight-only量化方法，能在单张GPU上快速将上千亿参数模型量化到3-bit或4-bit，且精度损失极小</li>
+<li>AWQ：并非所有权重都同等重要，只保留对激活值权重最重要的1%权重为FP16，其余为INT4，，极大保留模型的能力</li>
+<li>NF4：QLoRa提出的一种理论上的最优4-bit量化数据类型，专用于高效微调</li>
+<li>GGUF（GPT-Generated Unified Format）：由llama.cpp团队提出，取代了早期的GGML，是目前本地部署大语言模型的最主流的文件格式，核心技术包括：<ul>
+<li>大一统与自包含</li>
+<li>极佳的向后兼容与扩展性</li>
+<li>内存映射（nmap）</li>
+<li>非均匀混合量化（K-Quants）</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>模型压缩：从结构层面减少模型参数量和计算量的技术<ul>
+<li>网络剪枝：减去不重要的神经元，使得网络变稀疏<ul>
+<li>非结构化剪枝：随机将权重的某些小值设为0，优点是精度高，缺点是现代GPU对非规则化稀疏矩阵的加速支持有限</li>
+<li>结构化剪枝：直接剪掉整个通道，滤波器或注意力头，优点是能直接带来物理硬件的上的速度提升和显存降低</li>
+</ul>
+</li>
+<li>知识蒸馏：让一个参数量少，推理快的小模型（student）去学习一个参数量大，精度高的大模型（teacher）的输出行为</li>
+<li>低秩分解：把模型巨大的参数矩阵分解为两个或多个低秩小矩阵相乘；经典的ALBERT：对词嵌入矩阵进行分解以及当前及其火热的LoRa</li>
+</ul>
+</li>
+<li>模型加速：旨在提高模型推理吞吐量和降低延迟<ul>
+<li>算法和架构层的加速<ul>
+<li>KV Cache：在自回归生成中，缓存历史token的key和value<ul>
+<li>PagedAttention（vLLM的核心）：借鉴操作系统内存分页的思想，解决KV Cache显存碎片化问题，将显存利用率从20%提升到90%以上，提升并发吞吐量</li>
+</ul>
+</li>
+<li>高效注意力机制<ul>
+<li>MQA（Muti-Query Attention）&#x2F;GQA（Grouped-Query Attention）：多个Query共享同一组KV Head，大幅减少KV Cache的显存占用并提升读取速度（Llama-2&#x2F;3，Qwen等模型标配）</li>
+<li>FlashAttention：一种硬件感知的算法，通过优化GPU HBM（高宽带内存）和SRAM之间的读取次数，将Attention计算的速度提升数倍</li>
+</ul>
+</li>
+<li>Continuous Batching（动态批处理）：不再等待整个Batch的句子全部生成完毕，而是细粒度到token级别，有句子生成完毕立即插入新的句子，最大化GPU利用率</li>
+</ul>
+</li>
+<li>算子融合与编译优化：<ul>
+<li>算子融合Kernel Fusion：将多个连续的简单操作（如矩阵乘法+LayerNorm+ReLU）合并成一个底层的CUDA kernel，减少GPU内存读写的开销</li>
+<li>AI编译器：自动计算图进行优化</li>
+</ul>
+</li>
+<li>主流推理加速引擎：<ul>
+<li>NVDIA TensorRT&#x2F;TensorRT-LLM：NVDIA官方，支持深度的算子融合和极致的量化（FP8）</li>
+<li>ONNX Runtime：：微软的，跨平台支持，常用于端侧部署</li>
+<li>OpenVINO：Intel官方，针对集显和CPU优化</li>
+<li>vLLM：主流的开源LLM推理框架，以PagedAttention闻名</li>
+<li>llama.cpp：纯C&#x2F;C++编写，极致榨干CPU性能，本地&#x2F;边缘部署大模型的首选</li>
+<li>TGI（Text Generation Interrence）：Hugging Face官方推理框架，适合生产环境</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>总结：<ul>
+<li>移动端&#x2F;边缘设备：模型往往先经过知识蒸馏或者剪枝，然后进行INT8量化，最后转换为ONNX&#x2F;NCNN&#x2F;MNN格式调动移动端NPU&#x2F;GPU进行硬件推理加速</li>
+<li>云端LLM部署：通常下载原始模型，使用AWQ&#x2F;GPTQ&#x2F;FP8等技术进行量化 （降低显存门槛使得单卡可以装下），然后依托vLLM或者TensorRT-LLM框架（利用PagedAttention，Continuous Batching和FlashAttention）提供高并发，低延迟的API服务。</li>
+</ul>
+</li>
+</ul>
+<h1 id="大数据处理技术：Hadoop，Spark与Hive"><a href="#大数据处理技术：Hadoop，Spark与Hive" class="headerlink" title="大数据处理技术：Hadoop，Spark与Hive"></a>大数据处理技术：Hadoop，Spark与Hive</h1><ul>
+<li>Hadoop是处理大数据的工具，由多个组件构成HDFS,Yarn，MapReduce</li>
+<li>Hive是查询大数据的SQL语言，将查询语句解析为MapReduce函数</li>
+<li>Spark：通过内存强化性能的MapReduce，因为数据处理的中间结果会存储在磁盘里面，反复读写磁盘会拉慢速度</li>
+<li>Yarn是管理每个MapReduce任务资源的容器</li>
+<li>大数据处理场景：离线和实时<ul>
+<li>离线：一批一批地处理</li>
+<li>实时：流处理</li>
+</ul>
+</li>
+</ul>
+<h1 id="transformer"><a href="#transformer" class="headerlink" title="transformer"></a>transformer</h1><ol>
+<li>tanformer是一个基于self-attention的encoder-decoder的seq2seq模型，encoder层包括：input-位置编码-多头自注意力-And&amp;Norm-FNN，decoder层包括：input-位置编码-掩码自注意力-Add&amp;Norm-多头注意力-Add&amp;Norm-FNN-Add&amp;Norm-linear-softmax-output</li>
+<li>self-attention是通过计算Q,K,V三中向量嵌入的关系，让序列中每个元素能够关注到序列中其他相关元素的信息，从而更好捕捉序列内部的依赖关系，公式中的除以$\sqrt{d_k}$是因为要防止$QK^T$太大导致的梯度消失</li>
+</ol>
+<h1 id="对比SFT，RLHF，DPO的优势"><a href="#对比SFT，RLHF，DPO的优势" class="headerlink" title="对比SFT，RLHF，DPO的优势"></a>对比SFT，RLHF，DPO的优势</h1><ul>
+<li>SFT：使用人工标注的高质量量指令-响应数据，在预训练模型的基础上进行监督学习，让模型初步学习遵循指令，生成符合预期的输出</li>
+<li>RLHF：reinforcement Learning form human，基于人类反馈的强化学习，得到SFT初始模型之后，手机人类对模输出的偏好排序数据，训练奖励模型RM，以RM的输出作为反馈，用强化学习PPO优化模型</li>
+</ul>
+<h1 id="RAG的优化技巧"><a href="#RAG的优化技巧" class="headerlink" title="RAG的优化技巧"></a>RAG的优化技巧</h1><p><img src="https://fqtypora-test.oss-cn-chengdu.aliyuncs.com/20260408112428.png" alt="image.png"></p>
+<ul>
+<li>摘要检索<ul>
+<li>把文档输入LLM，生成该文本块的摘要，对摘要向量化也存到数据库并生成摘要和文本块之间的映射</li>
+</ul>
+</li>
+<li>子问题检索<ul>
+<li>把文档输入LLM，让LLM生成这个文档可以回答的潜在问题，把潜在问题也存入向量库并建立与原始文本块的映射</li>
+</ul>
+</li>
+<li>句子窗口检索<ul>
+<li>把文档切分成独立的句子并进行向量化，这是检索的“锚点”，使用用户问题检索最相关的句子，并从文档该处向前或向后扩展k个句子，形成一个包含完整上下文的文本窗口</li>
+</ul>
+</li>
+<li>多路召回<ul>
+<li>向量检索，关键词检索</li>
+</ul>
+</li>
+<li>精排rerank<ul>
+<li>使用计算成本更高的模型对候选集重新排序，考虑用户问题和候选文档更深度的相关性判断，而不仅仅是向量距离</li>
+</ul>
+</li>
+<li>查询改写：<ul>
+<li>让LLM把用户不规范的问题改写成一个或多个清晰，适合检索的查询</li>
+</ul>
+</li>
+<li>合理利用元数据<ul>
+<li>元数据：描述数据的数据，例如文档的类型，作者，创建日期，来源</li>
+<li>向量检索前根据元数据筛选一个文档子集</li>
+<li>在召回或者精排阶段为具有特定元数据的文档赋予更高的权重</li>
+</ul>
+</li>
+<li>生成阶段：设计合理的提示词模板如：<ul>
+<li>请基于以下参考资料回答问题，如果不清楚就回答不清楚，问题：{用户问题}？参考资料：：{文档1}{文档2}……</li>
+</ul>
+</li>
+<li>迭代式精炼回答<ul>
+<li>refine：串行：使用问题和知识块1生成答案1，再把答案1和知识块2输入LLM获得答案2</li>
+<li>批处理refine模式：批量化改造</li>
+</ul>
+</li>
+<li>树状总结<ul>
+<li><img src="https://fqtypora-test.oss-cn-chengdu.aliyuncs.com/20260408114654.png" alt="image.png|450"></li>
+</ul>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>理论基础</category>
+      </categories>
+      <tags>
+        <tag>大模型</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>基于langchain的个人科研小助手</title>
     <url>/posts/ca5ce5aa.html</url>
     <content><![CDATA[<blockquote>

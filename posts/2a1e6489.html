@@ -1,0 +1,406 @@
+<!DOCTYPE html><html lang="en" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>大模型基础 | Qian's Tech Space</title><meta name="author" content="Qian Feng"><meta name="copyright" content="Qian Feng"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="ffffff"><meta name="description" content="显卡 GPU&#x2F;CPU、CUDA、TPU&#x2F;苹果、各种常见显卡介绍   CPU：通用，穿行强，AI计算慢，费电 GPU：并行强，功耗大，面积大 CUDA：指挥GPU干活的语言 TPU：Tensor Processing Unit 张量处理器，Genmini生态，云端&#x2F;数据中心，高并发高算力高功耗 NPU：Nerual Processing Unit 神经网络处理器，AI专">
+<meta property="og:type" content="article">
+<meta property="og:title" content="大模型基础">
+<meta property="og:url" content="https://fengqianiqan.github.io/posts/2a1e6489.html">
+<meta property="og:site_name" content="Qian&#39;s Tech Space">
+<meta property="og:description" content="显卡 GPU&#x2F;CPU、CUDA、TPU&#x2F;苹果、各种常见显卡介绍   CPU：通用，穿行强，AI计算慢，费电 GPU：并行强，功耗大，面积大 CUDA：指挥GPU干活的语言 TPU：Tensor Processing Unit 张量处理器，Genmini生态，云端&#x2F;数据中心，高并发高算力高功耗 NPU：Nerual Processing Unit 神经网络处理器，AI专">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://fengqianiqan.github.io/img/butterfly-icon.png">
+<meta property="article:published_time" content="2026-04-07T13:40:32.000Z">
+<meta property="article:modified_time" content="2026-04-08T03:56:46.137Z">
+<meta property="article:author" content="Qian Feng">
+<meta property="article:tag" content="大模型">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://fengqianiqan.github.io/img/butterfly-icon.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "大模型基础",
+  "url": "https://fengqianiqan.github.io/posts/2a1e6489.html",
+  "image": "https://fengqianiqan.github.io/img/butterfly-icon.png",
+  "datePublished": "2026-04-07T13:40:32.000Z",
+  "dateModified": "2026-04-08T03:56:46.137Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Qian Feng",
+      "url": "https://fengqianiqan.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://fengqianiqan.github.io/posts/2a1e6489.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"No results found for: ${query}","hits_stats":"${hits} articles found"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: 'Copy Successful',
+    error: 'Copy Failed',
+    noSupport: 'Browser Not Supported'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: 'Just now',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: 'Load More'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '大模型基础',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 8.1.1"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">Loading...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (false) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">2</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">2</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">2</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> about</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">Qian's Tech Space</span></a><a class="nav-page-title" href="/"><span class="site-name">大模型基础</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  Back to Home</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> Search</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> about</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">大模型基础</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">Created</span><time class="post-meta-date-created" datetime="2026-04-07T13:40:32.000Z" title="Created 2026-04-07 21:40:32">2026-04-07</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">Updated</span><time class="post-meta-date-updated" datetime="2026-04-08T03:56:46.137Z" title="Updated 2026-04-08 11:56:46">2026-04-08</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E7%90%86%E8%AE%BA%E5%9F%BA%E7%A1%80/">理论基础</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">Post Views:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="显卡"><a href="#显卡" class="headerlink" title="显卡"></a>显卡</h1><blockquote>
+<p>GPU&#x2F;CPU、CUDA、TPU&#x2F;苹果、各种常见显卡介绍</p>
+</blockquote>
+<ol>
+<li>CPU：通用，穿行强，AI计算慢，费电</li>
+<li>GPU：并行强，功耗大，面积大</li>
+<li>CUDA：指挥GPU干活的语言</li>
+<li>TPU：Tensor Processing Unit 张量处理器，Genmini生态，云端&#x2F;数据中心，高并发高算力高功耗</li>
+<li>NPU：Nerual Processing Unit 神经网络处理器，AI专用，硬件级优化矩阵乘加（MAC），低延迟，高效能比，手机&#x2F;PC&#x2F;摄像头，华为&#x2F;苹果&#x2F;高通，低功耗实时推理<br><img src="https://fqtypora-test.oss-cn-chengdu.aliyuncs.com/20260407190531.png" alt="image.png"></li>
+</ol>
+<h1 id="模型量化、加速、剪枝"><a href="#模型量化、加速、剪枝" class="headerlink" title="模型量化、加速、剪枝"></a>模型量化、加速、剪枝</h1><ul>
+<li>模型量化：把模型中原本使用的高精度浮点数（FP32）表示的权重和激活值映射到低精度（FP16&#x2F;BF16&#x2F;INT8&#x2F;INT4），下面是一些基础量化方法：<ul>
+<li>PTQ 训练后量化——模型训练完成后直接对权重进行转换，优点：速度快；缺点：在极低精度下有明显的精度损失</li>
+<li>QAT 量化感知训练——在模型训练或微调的最后阶段，在前向传播中模拟量化误差，通过反向传播让模型学习适应误差；优点：精度保持得好；缺点计算成本较高</li>
+</ul>
+</li>
+<li>LLM的前沿量化方法：<ul>
+<li>GPTQ：一种基于二阶量化（Hessian矩阵）的weight-only量化方法，能在单张GPU上快速将上千亿参数模型量化到3-bit或4-bit，且精度损失极小</li>
+<li>AWQ：并非所有权重都同等重要，只保留对激活值权重最重要的1%权重为FP16，其余为INT4，，极大保留模型的能力</li>
+<li>NF4：QLoRa提出的一种理论上的最优4-bit量化数据类型，专用于高效微调</li>
+<li>GGUF（GPT-Generated Unified Format）：由llama.cpp团队提出，取代了早期的GGML，是目前本地部署大语言模型的最主流的文件格式，核心技术包括：<ul>
+<li>大一统与自包含</li>
+<li>极佳的向后兼容与扩展性</li>
+<li>内存映射（nmap）</li>
+<li>非均匀混合量化（K-Quants）</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>模型压缩：从结构层面减少模型参数量和计算量的技术<ul>
+<li>网络剪枝：减去不重要的神经元，使得网络变稀疏<ul>
+<li>非结构化剪枝：随机将权重的某些小值设为0，优点是精度高，缺点是现代GPU对非规则化稀疏矩阵的加速支持有限</li>
+<li>结构化剪枝：直接剪掉整个通道，滤波器或注意力头，优点是能直接带来物理硬件的上的速度提升和显存降低</li>
+</ul>
+</li>
+<li>知识蒸馏：让一个参数量少，推理快的小模型（student）去学习一个参数量大，精度高的大模型（teacher）的输出行为</li>
+<li>低秩分解：把模型巨大的参数矩阵分解为两个或多个低秩小矩阵相乘；经典的ALBERT：对词嵌入矩阵进行分解以及当前及其火热的LoRa</li>
+</ul>
+</li>
+<li>模型加速：旨在提高模型推理吞吐量和降低延迟<ul>
+<li>算法和架构层的加速<ul>
+<li>KV Cache：在自回归生成中，缓存历史token的key和value<ul>
+<li>PagedAttention（vLLM的核心）：借鉴操作系统内存分页的思想，解决KV Cache显存碎片化问题，将显存利用率从20%提升到90%以上，提升并发吞吐量</li>
+</ul>
+</li>
+<li>高效注意力机制<ul>
+<li>MQA（Muti-Query Attention）&#x2F;GQA（Grouped-Query Attention）：多个Query共享同一组KV Head，大幅减少KV Cache的显存占用并提升读取速度（Llama-2&#x2F;3，Qwen等模型标配）</li>
+<li>FlashAttention：一种硬件感知的算法，通过优化GPU HBM（高宽带内存）和SRAM之间的读取次数，将Attention计算的速度提升数倍</li>
+</ul>
+</li>
+<li>Continuous Batching（动态批处理）：不再等待整个Batch的句子全部生成完毕，而是细粒度到token级别，有句子生成完毕立即插入新的句子，最大化GPU利用率</li>
+</ul>
+</li>
+<li>算子融合与编译优化：<ul>
+<li>算子融合Kernel Fusion：将多个连续的简单操作（如矩阵乘法+LayerNorm+ReLU）合并成一个底层的CUDA kernel，减少GPU内存读写的开销</li>
+<li>AI编译器：自动计算图进行优化</li>
+</ul>
+</li>
+<li>主流推理加速引擎：<ul>
+<li>NVDIA TensorRT&#x2F;TensorRT-LLM：NVDIA官方，支持深度的算子融合和极致的量化（FP8）</li>
+<li>ONNX Runtime：：微软的，跨平台支持，常用于端侧部署</li>
+<li>OpenVINO：Intel官方，针对集显和CPU优化</li>
+<li>vLLM：主流的开源LLM推理框架，以PagedAttention闻名</li>
+<li>llama.cpp：纯C&#x2F;C++编写，极致榨干CPU性能，本地&#x2F;边缘部署大模型的首选</li>
+<li>TGI（Text Generation Interrence）：Hugging Face官方推理框架，适合生产环境</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>总结：<ul>
+<li>移动端&#x2F;边缘设备：模型往往先经过知识蒸馏或者剪枝，然后进行INT8量化，最后转换为ONNX&#x2F;NCNN&#x2F;MNN格式调动移动端NPU&#x2F;GPU进行硬件推理加速</li>
+<li>云端LLM部署：通常下载原始模型，使用AWQ&#x2F;GPTQ&#x2F;FP8等技术进行量化 （降低显存门槛使得单卡可以装下），然后依托vLLM或者TensorRT-LLM框架（利用PagedAttention，Continuous Batching和FlashAttention）提供高并发，低延迟的API服务。</li>
+</ul>
+</li>
+</ul>
+<h1 id="大数据处理技术：Hadoop，Spark与Hive"><a href="#大数据处理技术：Hadoop，Spark与Hive" class="headerlink" title="大数据处理技术：Hadoop，Spark与Hive"></a>大数据处理技术：Hadoop，Spark与Hive</h1><ul>
+<li>Hadoop是处理大数据的工具，由多个组件构成HDFS,Yarn，MapReduce</li>
+<li>Hive是查询大数据的SQL语言，将查询语句解析为MapReduce函数</li>
+<li>Spark：通过内存强化性能的MapReduce，因为数据处理的中间结果会存储在磁盘里面，反复读写磁盘会拉慢速度</li>
+<li>Yarn是管理每个MapReduce任务资源的容器</li>
+<li>大数据处理场景：离线和实时<ul>
+<li>离线：一批一批地处理</li>
+<li>实时：流处理</li>
+</ul>
+</li>
+</ul>
+<h1 id="transformer"><a href="#transformer" class="headerlink" title="transformer"></a>transformer</h1><ol>
+<li>tanformer是一个基于self-attention的encoder-decoder的seq2seq模型，encoder层包括：input-位置编码-多头自注意力-And&amp;Norm-FNN，decoder层包括：input-位置编码-掩码自注意力-Add&amp;Norm-多头注意力-Add&amp;Norm-FNN-Add&amp;Norm-linear-softmax-output</li>
+<li>self-attention是通过计算Q,K,V三中向量嵌入的关系，让序列中每个元素能够关注到序列中其他相关元素的信息，从而更好捕捉序列内部的依赖关系，公式中的除以$\sqrt{d_k}$是因为要防止$QK^T$太大导致的梯度消失</li>
+</ol>
+<h1 id="对比SFT，RLHF，DPO的优势"><a href="#对比SFT，RLHF，DPO的优势" class="headerlink" title="对比SFT，RLHF，DPO的优势"></a>对比SFT，RLHF，DPO的优势</h1><ul>
+<li>SFT：使用人工标注的高质量量指令-响应数据，在预训练模型的基础上进行监督学习，让模型初步学习遵循指令，生成符合预期的输出</li>
+<li>RLHF：reinforcement Learning form human，基于人类反馈的强化学习，得到SFT初始模型之后，手机人类对模输出的偏好排序数据，训练奖励模型RM，以RM的输出作为反馈，用强化学习PPO优化模型</li>
+</ul>
+<h1 id="RAG的优化技巧"><a href="#RAG的优化技巧" class="headerlink" title="RAG的优化技巧"></a>RAG的优化技巧</h1><p><img src="https://fqtypora-test.oss-cn-chengdu.aliyuncs.com/20260408112428.png" alt="image.png"></p>
+<ul>
+<li>摘要检索<ul>
+<li>把文档输入LLM，生成该文本块的摘要，对摘要向量化也存到数据库并生成摘要和文本块之间的映射</li>
+</ul>
+</li>
+<li>子问题检索<ul>
+<li>把文档输入LLM，让LLM生成这个文档可以回答的潜在问题，把潜在问题也存入向量库并建立与原始文本块的映射</li>
+</ul>
+</li>
+<li>句子窗口检索<ul>
+<li>把文档切分成独立的句子并进行向量化，这是检索的“锚点”，使用用户问题检索最相关的句子，并从文档该处向前或向后扩展k个句子，形成一个包含完整上下文的文本窗口</li>
+</ul>
+</li>
+<li>多路召回<ul>
+<li>向量检索，关键词检索</li>
+</ul>
+</li>
+<li>精排rerank<ul>
+<li>使用计算成本更高的模型对候选集重新排序，考虑用户问题和候选文档更深度的相关性判断，而不仅仅是向量距离</li>
+</ul>
+</li>
+<li>查询改写：<ul>
+<li>让LLM把用户不规范的问题改写成一个或多个清晰，适合检索的查询</li>
+</ul>
+</li>
+<li>合理利用元数据<ul>
+<li>元数据：描述数据的数据，例如文档的类型，作者，创建日期，来源</li>
+<li>向量检索前根据元数据筛选一个文档子集</li>
+<li>在召回或者精排阶段为具有特定元数据的文档赋予更高的权重</li>
+</ul>
+</li>
+<li>生成阶段：设计合理的提示词模板如：<ul>
+<li>请基于以下参考资料回答问题，如果不清楚就回答不清楚，问题：{用户问题}？参考资料：：{文档1}{文档2}……</li>
+</ul>
+</li>
+<li>迭代式精炼回答<ul>
+<li>refine：串行：使用问题和知识块1生成答案1，再把答案1和知识块2输入LLM获得答案2</li>
+<li>批处理refine模式：批量化改造</li>
+</ul>
+</li>
+<li>树状总结<ul>
+<li><img src="https://fqtypora-test.oss-cn-chengdu.aliyuncs.com/20260408114654.png" alt="image.png|450"></li>
+</ul>
+</li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>Author: </span><span class="post-copyright-info"><a href="https://fengqianiqan.github.io">Qian Feng</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>Link: </span><span class="post-copyright-info"><a href="https://fengqianiqan.github.io/posts/2a1e6489.html">https://fengqianiqan.github.io/posts/2a1e6489.html</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>Copyright Notice: </span><span class="post-copyright-info">All articles on this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless otherwise stated.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/">大模型</a></div><div class="post-share"><div class="social-share" data-image="/img/butterfly-icon.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/posts/ca5ce5aa.html" title="基于langchain的个人科研小助手"><img class="cover" src="/img/wallhaven-427p6y_1280x720.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">Next</div><div class="info-item-2">基于langchain的个人科研小助手</div></div><div class="info-2"><div class="info-item-1"> 注：该笔记基于在Datawhale第68期组队学习中记录，完整的教程和代码请参考：LLM Universe | 动手学大模型应用开发，这里只是简单总结了一下我自己的感悟  大模型简介 开发框架：langChain框架可以给大语言模型提供通用的接口来简化开发程序 本地VSCode连接Codespace jupyter内核完成 第一章关于环境配置还是比较基础的，对于计算机出身来说没太大难度，但是第一章的基本概念部分，首次认识了langchain，希望之后可以上手试用  使用LLM API开发应用 通过这一章内容学会了申请百度千帆大模型的API key，并成功使用python进行调用，对于prompt engineering，我也是采用的千帆进行测试，发现千帆回答的内容确实和教程中gpt的差距很大   1234567891011121314151617181920212223242526272829import os# from openai import OpenAIimport qianfanfrom dotenv import load_dotenv, find_dotenv ...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>Related Articles</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/posts/ca5ce5aa.html" title="基于langchain的个人科研小助手"><img class="cover" src="/img/wallhaven-427p6y_1280x720.png" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-04-05</div><div class="info-item-2">基于langchain的个人科研小助手</div></div><div class="info-2"><div class="info-item-1"> 注：该笔记基于在Datawhale第68期组队学习中记录，完整的教程和代码请参考：LLM Universe | 动手学大模型应用开发，这里只是简单总结了一下我自己的感悟  大模型简介 开发框架：langChain框架可以给大语言模型提供通用的接口来简化开发程序 本地VSCode连接Codespace jupyter内核完成 第一章关于环境配置还是比较基础的，对于计算机出身来说没太大难度，但是第一章的基本概念部分，首次认识了langchain，希望之后可以上手试用  使用LLM API开发应用 通过这一章内容学会了申请百度千帆大模型的API key，并成功使用python进行调用，对于prompt engineering，我也是采用的千帆进行测试，发现千帆回答的内容确实和教程中gpt的差距很大   1234567891011121314151617181920212223242526272829import os# from openai import OpenAIimport qianfanfrom dotenv import load_dotenv, find_dotenv ...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/butterfly-icon.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">Qian Feng</div><div class="author-info-description"></div><div class="site-data"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">2</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">2</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">2</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/fengqianiqan"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">欢迎来到我的技术空间！🚀 <br>目前深耕 <b>大模型工程化 (RAG/微调)</b> 与 <b>计算机视觉</b> <br> 欢迎技术交流！</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Contents</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%98%BE%E5%8D%A1"><span class="toc-number">1.</span> <span class="toc-text">显卡</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%A8%A1%E5%9E%8B%E9%87%8F%E5%8C%96%E3%80%81%E5%8A%A0%E9%80%9F%E3%80%81%E5%89%AA%E6%9E%9D"><span class="toc-number">2.</span> <span class="toc-text">模型量化、加速、剪枝</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%A4%A7%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86%E6%8A%80%E6%9C%AF%EF%BC%9AHadoop%EF%BC%8CSpark%E4%B8%8EHive"><span class="toc-number">3.</span> <span class="toc-text">大数据处理技术：Hadoop，Spark与Hive</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#transformer"><span class="toc-number">4.</span> <span class="toc-text">transformer</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AF%B9%E6%AF%94SFT%EF%BC%8CRLHF%EF%BC%8CDPO%E7%9A%84%E4%BC%98%E5%8A%BF"><span class="toc-number">5.</span> <span class="toc-text">对比SFT，RLHF，DPO的优势</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#RAG%E7%9A%84%E4%BC%98%E5%8C%96%E6%8A%80%E5%B7%A7"><span class="toc-number">6.</span> <span class="toc-text">RAG的优化技巧</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Posts</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/posts/2a1e6489.html" title="大模型基础">大模型基础</a><time datetime="2026-04-07T13:40:32.000Z" title="Created 2026-04-07 21:40:32">2026-04-07</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/ca5ce5aa.html" title="基于langchain的个人科研小助手"><img src="/img/wallhaven-427p6y_1280x720.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="基于langchain的个人科研小助手"/></a><div class="content"><a class="title" href="/posts/ca5ce5aa.html" title="基于langchain的个人科研小助手">基于langchain的个人科研小助手</a><time datetime="2026-04-05T08:00:00.000Z" title="Created 2026-04-05 16:00:00">2026-04-05</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By Qian Feng</span><span class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.1.1</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.4</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Reading Mode"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="Toggle Between Light and Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle Between Single-column and Double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="Settings"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back to Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><div class="js-pjax"><script>(() => {
+  const loadMathjax = () => {
+    if (!window.MathJax) {
+      window.MathJax = {
+        loader: {
+          load: [
+            // Four font extension packages (optional)
+            //- '[tex]/bbm',
+            //- '[tex]/bboldx',
+            //- '[tex]/dsfont',
+            '[tex]/mhchem'
+          ],
+          paths: {
+            'mathjax-newcm': '[mathjax]/../@mathjax/mathjax-newcm-font',
+
+            //- // Four font extension packages (optional)
+            //- 'mathjax-bbm-extension': '[mathjax]/../@mathjax/mathjax-bbm-font-extension',
+            //- 'mathjax-bboldx-extension': '[mathjax]/../@mathjax/mathjax-bboldx-font-extension',
+            //- 'mathjax-dsfont-extension': '[mathjax]/../@mathjax/mathjax-dsfont-font-extension',
+            'mathjax-mhchem-extension': '[mathjax]/../@mathjax/mathjax-mhchem-font-extension'
+          }
+        },
+        output: {
+          font: 'mathjax-newcm',
+        },
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          tags: 'none',
+          packages: {
+            '[+]': [
+              'mhchem'
+            ]
+          }
+        },
+        chtml: {
+          scale: 1.1
+        },
+        options: {
+          enableMenu: true,
+          menuOptions: {
+            settings: {
+              enrich: false  // Turn off Braille and voice narration text automatic generation
+            }
+          },
+          renderActions: {
+            findScript: [10, doc => {
+              for (const node of document.querySelectorAll('script[type^="math/tex"]')) {
+                const display = !!node.type.match(/; *mode=display/)
+                const math = new doc.options.MathItem(node.textContent, doc.inputJax[0], display)
+                const text = document.createTextNode('')
+                node.parentNode.replaceChild(text, node)
+                math.start = {node: text, delim: '', n: 0}
+                math.end = {node: text, delim: '', n: 0}
+                doc.math.push(math)
+              }
+            }, '']
+          }
+        }
+      }
+
+      const script = document.createElement('script')
+      script.src = 'https://cdn.jsdelivr.net/npm/mathjax@4.1.0/tex-mml-chtml.min.js'
+      script.id = 'MathJax-script'
+      script.async = true
+      document.head.appendChild(script)
+    } else {
+      MathJax.startup.document.state(0)
+      MathJax.texReset()
+      MathJax.typesetPromise()
+    }
+  }
+
+  btf.addGlobalFn('encrypt', loadMathjax, 'mathjax')
+  window.pjax ? loadMathjax() : window.addEventListener('load', loadMathjax)
+})()</script></div><script id="canvas_nest" defer="defer" color="0,255,255" opacity="0.7" zIndex="-1" count="150" mobile="true" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/canvas-nest.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading Database</span></div><div class="local-search-input"><input placeholder="Search for Posts" type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js?v=5.5.4"></script></div></div></body></html>
