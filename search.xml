@@ -5,7 +5,7 @@
     <url>/posts/e851fb7f.html</url>
     <content><![CDATA[<h1 id="MiniMax-H3-×-ComfyUI：H200-上的音视频生成与推理加速"><a href="#MiniMax-H3-×-ComfyUI：H200-上的音视频生成与推理加速" class="headerlink" title="MiniMax H3 × ComfyUI：H200 上的音视频生成与推理加速"></a>MiniMax H3 × ComfyUI：H200 上的音视频生成与推理加速</h1><p>这是一篇关于 MiniMax H3 的 ComfyUI 推理展示。实验使用 NVIDIA H200 单卡生成 768×1344、362 帧、24 FPS 的音视频内容，并比较不同推理加速组合的实际效果。</p>
 <blockquote>
-<p><strong>结果摘要：</strong> 非 Sage 路径中，TE-Speed + EasyCache 将端到端时间从 19 分 43 秒缩短到 7 分 44 秒，达到 2.55× 加速；SageAttention 可以单独或搭配 EasyCache 完成推理，但当前与 TE-Speed 组合时稳定性不足。</p>
+<p><strong>结果摘要：</strong> 非 Sage 路径中，TE-Speed + EasyCache 将端到端时间从 19 分 43 秒缩短到 7 分 44 秒，达到 2.55× 加速。SageAttention 可以单独或搭配 EasyCache 完成推理，但两条 Sage 成片在末尾出现明显模糊；与 TE-Speed 组合时还存在稳定性不足。</p>
 </blockquote>
 <p>本次工作围绕以下开源项目展开：</p>
 <ul>
@@ -76,7 +76,7 @@
 </tr>
 </tbody></table>
 <h3 id="关于-CUDA-优化路径"><a href="#关于-CUDA-优化路径" class="headerlink" title="关于 CUDA 优化路径"></a>关于 CUDA 优化路径</h3><p>本次推理仍然运行在 H200 GPU 上，Sage 配置也确认启用了 SageAttention 的 CUDA kernel；但启动日志提示，当前 PyTorch 为 <code>cu128</code>，而 comfy-kitchen 的优化 CUDA&#x2F;Triton 算子要求 <code>cu130+</code>。因此，comfy-kitchen 的 CUDA 和 Triton 后端在本次测试中处于禁用状态，相关操作回退到 eager 实现。</p>
-<p>这不会使本次结果失效，但意味着表中的耗时代表“当前实际环境”的性能，而不是所有优化 CUDA 算子完整启用后的理论最佳性能。后续升级到版本匹配的 PyTorch&#x2F;CUDA 环境后，需要重新测试才能进行公平比较。</p>
+<p>这不会使本次结果失效，但意味着表中的耗时代表“当前实际环境”的性能，而不是所有优化 CUDA 算子完整启用后的理论最佳性能。</p>
 <h2 id="使用的模型"><a href="#使用的模型" class="headerlink" title="使用的模型"></a>使用的模型</h2><table>
 <thead>
 <tr>
@@ -188,13 +188,13 @@
 <td>SageAttention</td>
 <td align="right">9 分 53 秒</td>
 <td align="right">10 分 30 秒</td>
-<td>完成</td>
+<td>完成，末尾模糊</td>
 </tr>
 <tr>
 <td>EasyCache + SageAttention</td>
 <td align="right">7 分 25 秒</td>
 <td align="right">8 分 02 秒</td>
-<td>完成</td>
+<td>完成，末尾模糊</td>
 </tr>
 <tr>
 <td>TE-Speed + SageAttention</td>
@@ -210,6 +210,9 @@
 </tr>
 </tbody></table>
 <p>SageAttention 单独使用，以及与 EasyCache 组合使用时可以完成推理；加入 TE-Speed 后，当前组合仍存在稳定性问题。因此，现阶段更适合使用非 Sage 的 TE-Speed + EasyCache 作为可运行配置，Sage 相关组合仍处于实验阶段。</p>
+<h3 id="Sage-视频末尾模糊：排查结论"><a href="#Sage-视频末尾模糊：排查结论" class="headerlink" title="Sage 视频末尾模糊：排查结论"></a>Sage 视频末尾模糊：排查结论</h3><p>SageAttention 和 EasyCache + SageAttention 两条视频均为完整的 362 帧 H.264 文件，日志中也确认实际调用了 SageAttention CUDA kernel，未出现 Attention 回退、采样报错或视频编码失败。因此，末尾模糊不是播放器解码或输出文件截断造成的。</p>
+<p>由于两条异常结果唯一共同的加速组件是 SageAttention，而相同模型、prompt、seed 与采样设置下的非 Sage 视频末尾保持清晰，当前证据更指向 <strong>SageAttention 在这条长时序 MiniMax H3 推理路径上的数值精度兼容性问题</strong>，而非 EasyCache 单独导致。SageAttention 为换取速度会采用低精度&#x2F;量化的 Attention 计算；在扩散后段，微小的数值偏差可能累积并表现为整体细节塌缩。该结论是基于对照实验的工程推断，尚不能仅凭这两次运行确定为上游实现缺陷。</p>
+<p>后续应在相同 seed 下补充两组验证：关闭低精度 Sage Attention，或改回 PyTorch Attention。若末尾清晰度恢复，即可进一步确认该假设。在修复或确认前，本文不把 Sage 路径的耗时作为兼顾生成质量时的推荐结果。</p>
 <blockquote>
 <p><strong>结果边界：</strong> 这组测试聚焦速度和运行完成情况，没有进行 SSIM、PSNR 或音频响度评估。因此，“最快”只表示耗时最低，不等同于生成质量最佳。</p>
 </blockquote>
@@ -219,9 +222,9 @@
 <article class="h3-video-card"><div class="h3-video-card-title"><span>Baseline</span><small>19 分 43 秒</small></div><video controls preload="metadata" playsinline data-h3-video><source src="/video/non-sage/t2va/base_00001_.mp4" type="video/mp4"></video></article>
 <article class="h3-video-card"><div class="h3-video-card-title"><span>TE-Speed</span><small>10 分 58 秒 · 1.80×</small></div><video controls preload="metadata" playsinline data-h3-video><source src="/video/non-sage/t2va/te_00001_.mp4" type="video/mp4"></video></article>
 <article class="h3-video-card"><div class="h3-video-card-title"><span>EasyCache</span><small>13 分 58 秒 · 1.41×</small></div><video controls preload="metadata" playsinline data-h3-video><source src="/video/non-sage/t2va/easycache_00001_.mp4" type="video/mp4"></video></article>
-<article class="h3-video-card"><div class="h3-video-card-title"><span>TE-Speed + EasyCache</span><small>7 分 44 秒 · 2.55×</small></div><video controls preload="metadata" playsinline data-h3-video><source src="/video/non-sage/t2va/te_easycache_00001_.mp4" type="video/mp4"></video></article>
+<article class="h3-video-card"><div class="h3-video-card-title"><span class="h3-video-card-label-compact">TE-Speed + EasyCache</span><small>7 分 44 秒 · 2.55×</small></div><video controls preload="metadata" playsinline data-h3-video><source src="/video/non-sage/t2va/te_easycache_00001_.mp4" type="video/mp4"></video></article>
 <article class="h3-video-card"><div class="h3-video-card-title"><span>SageAttention</span><small>10 分 30 秒</small></div><video controls preload="metadata" playsinline data-h3-video><source src="/video/sage/t2va/sageattention_00001_.mp4" type="video/mp4"></video></article>
-<article class="h3-video-card"><div class="h3-video-card-title"><span>EasyCache + SageAttention</span><small>8 分 02 秒</small></div><video controls preload="metadata" playsinline data-h3-video><source src="/video/sage/t2va/easycache_sageattention_00001_.mp4" type="video/mp4"></video></article>
+<article class="h3-video-card"><div class="h3-video-card-title"><span class="h3-video-card-label-compact">EasyCache + SageAttention</span><small>8 分 02 秒</small></div><video controls preload="metadata" playsinline data-h3-video><source src="/video/sage/t2va/easycache_sageattention_00001_.mp4" type="video/mp4"></video></article>
 </div>
 </div>
 
@@ -230,6 +233,7 @@
   .h3-video-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
   .h3-video-card { overflow: hidden; border: 1px solid rgba(58, 74, 92, .13); border-radius: .8rem; background: rgba(255, 255, 255, .72); box-shadow: 0 .25rem .9rem rgba(30, 43, 61, .07); }
   .h3-video-card-title { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; padding: .7rem .8rem; font-weight: 650; font-size: .95rem; }
+  .h3-video-card-label-compact { font-size: .78rem; letter-spacing: -.015em; line-height: 1.25; white-space: nowrap; }
   .h3-video-card-title small { flex: none; color: #7a8491; font-size: .76rem; font-weight: 500; white-space: nowrap; }
   .h3-video-card video { display: block; width: 100%; aspect-ratio: 9 / 16; background: #111; object-fit: contain; }
   @media (max-width: 900px) { .h3-video-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
@@ -237,16 +241,7 @@
 </style>
 
 <p>TE-Speed + SageAttention 以及 TE-Speed + EasyCache + SageAttention 未生成可展示的视频。</p>
-<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>这次测试表明，在当前 H200 环境中，ComfyUI 可以完成 MiniMax H3 的高分辨率音视频生成；TE-Speed 和 EasyCache 组合能够显著减少推理时间。SageAttention 单独也可以运行，但与 TE-Speed 叠加后仍需要进一步解决稳定性问题。</p>
-<p>速度之外，最终配置还需要同时满足生成质量、运行稳定性和可复现性。后续将继续完善视频展示，并对 SageAttention 与 TE-Speed 的组合进行单变量排查。</p>
-<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
-<li><a href="https://github.com/comfyanonymous/ComfyUI">ComfyUI 官方仓库</a>：推理框架与节点工作流；</li>
-<li><a href="https://www.modelscope.cn/models/MiniMax/MiniMax-H3/">MiniMax H3 ModelScope 页面</a>：模型与相关资源；</li>
-<li><a href="https://github.com/HELPMEEADICE/TE-Speed-MiniMaxH3-OSS">TE-Speed-MiniMaxH3-OSS</a>：H3 推理加速实现；</li>
-<li><a href="https://github.com/thu-ml/SageAttention">SageAttention</a>：Attention 加速实现；</li>
-<li><a href="https://github.com/H-EmbodVis/EasyCache">EasyCache</a>：扩散模型缓存加速实现。</li>
-</ul>
-<p>本文中的数据是上述项目在当前模型、硬件和软件环境下的 ComfyUI 适配结果，不代表上游项目在其他环境中的统一 benchmark。</p>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>这次测试表明，在当前 H200 环境中，ComfyUI 可以完成 MiniMax H3 的高分辨率音视频生成；TE-Speed 和 EasyCache 组合能够显著减少推理时间。SageAttention 路径虽然能够完成推理，但当前既有末尾清晰度问题，也与 TE-Speed 存在稳定性问题，仍需进一步验证与修复。</p>
 ]]></content>
       <categories>
         <category>工程实践</category>
