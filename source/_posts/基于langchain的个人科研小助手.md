@@ -1,16 +1,23 @@
 ---
 title: 基于langchain的个人科研小助手
+date: 2026-04-05 16:00:00
 top_img: /img/wallhaven-427p6y_1280x720.png
 abbrlink: ca5ce5aa
+cover: /img/wallhaven-427p6y_1280x720.png
+tags: 
+  - 大模型
+  - RAG
+categories: 
+  - 工程实战
 ---
 
 >注：该笔记基于在Datawhale第68期组队学习中记录，完整的教程和代码请参考：[LLM Universe | 动手学大模型应用开发](https://github.com/datawhalechina/llm-universe)，这里只是简单总结了一下我自己的感悟
-## 第一章 大模型简介
+# 大模型简介
 - 开发框架：langChain框架可以给大语言模型提供通用的接口来简化开发程序
 - 本地VSCode连接Codespace
 - jupyter内核完成
 - 第一章关于环境配置还是比较基础的，对于计算机出身来说没太大难度，但是第一章的基本概念部分，首次认识了langchain，希望之后可以上手试用
-## 第二章 使用LLM API开发应用
+# 使用LLM API开发应用
 - 通过这一章内容学会了申请百度千帆大模型的API key，并成功使用python进行调用，对于prompt engineering，我也是采用的千帆进行测试，发现千帆回答的内容确实和教程中gpt的差距很大
  ```python
 	import os
@@ -43,7 +50,7 @@ abbrlink: ca5ce5aa
 	                        system="你是一名个人助理")
 	    return resp["result"]
  ```
-## 第三章 搭建知识库
+# 搭建知识库
 - 词向量和通用文本向量：通用文本向量是对长文本向量化而不再是单词
 - 检索增强生成RAG系统搭建方式：公司的嵌入API、本地使用的向量模型
 - 向量数据库：通过计算和目标向量之间的余弦距离等方式获取相似度，在海量的向量数据检索上更有优势，向量数据库包括有：Chroma（轻量，适合初学者）、Weaviate（开源）、Qdrant（效率更高，支持三种部署方式）
@@ -109,7 +116,7 @@ print(f"检索到的内容数：{len(sim_docs)}")
 for i, sim_doc in enumerate(sim_docs):
     print(f"检索到的第{i}个内容: \n{sim_doc.page_content[:200]}", end="\n--------------\n")
 ```
-## 第四章 构建RAG应用
+# 构建RAG应用
 
 **基于LangChain调用智谱Ai**（需要自定义一个llm，这里已经封装好了zhipuai_llm.py）
 - 构建检索问答链：使用搭建好的向量数据库，对查询问题进行找回，并将召回结果和问题结合起来输入到大模型进行回答
@@ -235,9 +242,9 @@ for i, sim_doc in enumerate(sim_docs):
   ![image.png](https://fqtypora-test.oss-cn-chengdu.aliyuncs.com/20260406174529.png)
 
 
-## 第五章 系统评估和优化
+# 系统评估和优化
 - 大模型评估方法：量化评估、多维评估、构造客观题、计算答案相似度（例：利用nlkt库的bleu打分函数）、使用大模型进行评估、混合评估
-### 评估优化生成部分
+## 评估优化生成部分
 	- RAG检索生成增强包含两个核心部分：检索+生成
 - 提升直观回答质量
 ```
@@ -254,13 +261,13 @@ for i, sim_doc in enumerate(sim_docs):
   template_v4 = """ 请你依次执行以下步骤： ① 使用以下上下文来回答最后的问题。如果你不知道答案，就说你不知道，不要试图编造答案。 你应该使答案尽可能详细具体，但不要偏题。如果答案比较长，请酌情进行分段，以提高答案的阅读体验。 如果答案有几点，你应该分点标号回答，让答案清晰具体。 上下文： {context} 问题: {question} 有用的回答: ② 基于提供的上下文，反思回答中有没有不正确或不是基于上下文得到的内容，如果有，回答你不知道 确保你执行了每一个步骤，不要跳过任意一个步骤。 """
 ```
 - 增加一个指令解析
-### 优化检索的思路
+## 优化检索的思路
 - 知识片段被割裂导致答案丢失
 - query提问需要长上下文概括回答
 - 关键词误导
 - 匹配关系不合理
 
-## 第六章 我的个人科研小助手
+# 我的个人科研小助手
 >基于Langchain+智谱embedding-3+智谱GLM设计的大模型个人助手
 >源教程中使用了ChatGPT大语言模型，但是智谱送token啊，谁让它免费呢！
 
