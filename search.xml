@@ -1,3 +1,511 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
+  <entry>
+    <title>基于langchain的个人科研小助手</title>
+    <url>/posts/ca5ce5aa.html</url>
+    <content><![CDATA[<blockquote>
+<p>注：该笔记基于在Datawhale第68期组队学习中记录，完整的教程和代码请参考：<a href="https://github.com/datawhalechina/llm-universe">LLM Universe | 动手学大模型应用开发</a>，这里只是简单总结了一下我自己的感悟</p>
+</blockquote>
+<h1 id="大模型简介"><a href="#大模型简介" class="headerlink" title="大模型简介"></a>大模型简介</h1><ul>
+<li>开发框架：langChain框架可以给大语言模型提供通用的接口来简化开发程序</li>
+<li>本地VSCode连接Codespace</li>
+<li>jupyter内核完成</li>
+<li>第一章关于环境配置还是比较基础的，对于计算机出身来说没太大难度，但是第一章的基本概念部分，首次认识了langchain，希望之后可以上手试用</li>
+</ul>
+<h1 id="使用LLM-API开发应用"><a href="#使用LLM-API开发应用" class="headerlink" title="使用LLM API开发应用"></a>使用LLM API开发应用</h1><ul>
+<li>通过这一章内容学会了申请百度千帆大模型的API key，并成功使用python进行调用，对于prompt engineering，我也是采用的千帆进行测试，发现千帆回答的内容确实和教程中gpt的差距很大</li>
+</ul>
+ <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="comment"># from openai import OpenAI</span></span><br><span class="line"><span class="keyword">import</span> qianfan</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv, find_dotenv</span><br><span class="line"> <span class="comment"># 如果你设置的是全局的环境变量，这行代码则没有任何作用。</span></span><br><span class="line">_ = load_dotenv(find_dotenv())</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">gen_wenxin_messages</span>(<span class="params">prompt</span>):</span><br><span class="line">    <span class="string">&#x27;&#x27;&#x27;</span></span><br><span class="line"><span class="string">    构造文心模型请求参数 messages</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    请求参数：</span></span><br><span class="line"><span class="string">        prompt: 对应的用户提示词</span></span><br><span class="line"><span class="string">    &#x27;&#x27;&#x27;</span></span><br><span class="line">    messages = [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: prompt&#125;]</span><br><span class="line">    <span class="keyword">return</span> messages</span><br><span class="line"><span class="comment"># 一个封装 OpenAI 接口的函数，参数为 Prompt，返回对应结果</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_completion</span>(<span class="params">prompt,</span></span><br><span class="line"><span class="params">                   model=<span class="string">&quot;Yi-34B-Chat&quot;</span>,</span></span><br><span class="line"><span class="params">                   temperature=<span class="number">0.95</span></span></span><br><span class="line"><span class="params">                   </span>):</span><br><span class="line"></span><br><span class="line">    chat_comp = qianfan.ChatCompletion()</span><br><span class="line">    message = gen_wenxin_messages(prompt)</span><br><span class="line">    resp = chat_comp.do(messages=message, </span><br><span class="line">                        model=model,</span><br><span class="line">                        temperature = temperature,</span><br><span class="line">                        system=<span class="string">&quot;你是一名个人助理&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> resp[<span class="string">&quot;result&quot;</span>]</span><br></pre></td></tr></table></figure>
+<h1 id="搭建知识库"><a href="#搭建知识库" class="headerlink" title="搭建知识库"></a>搭建知识库</h1><ul>
+<li>词向量和通用文本向量：通用文本向量是对长文本向量化而不再是单词</li>
+<li>检索增强生成RAG系统搭建方式：公司的嵌入API、本地使用的向量模型</li>
+<li>向量数据库：通过计算和目标向量之间的余弦距离等方式获取相似度，在海量的向量数据检索上更有优势，向量数据库包括有：Chroma（轻量，适合初学者）、Weaviate（开源）、Qdrant（效率更高，支持三种部署方式）</li>
+<li>LangChain为LLM开发自定义大模型提供了框架，支持很多大模型的Embeddings，这一节中我学习了使用Zhipuai基于Langchain自定义Embedings。下面是代码总结</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">List</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.embeddings <span class="keyword">import</span> Embeddings</span><br><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> PyMuPDFLoader</span><br><span class="line"><span class="keyword">from</span> langchain_community.document_loaders <span class="keyword">import</span> UnstructuredMarkdownLoader</span><br><span class="line"><span class="keyword">from</span> langchain_community.vectorstores <span class="keyword">import</span> Chroma</span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ZhipuAIEmbeddings</span>(<span class="title class_ inherited__">Embeddings</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="keyword">from</span> zhipuai <span class="keyword">import</span> ZhipuAI</span><br><span class="line">        <span class="variable language_">self</span>.client = ZhipuAI(api_key=<span class="string">&quot;...&quot;</span>)</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">embed_documents</span>(<span class="params">self, texts: <span class="type">List</span>[<span class="built_in">str</span>]</span>) -&gt; <span class="type">List</span>[<span class="type">List</span>[<span class="built_in">float</span>]]:</span><br><span class="line">        embeddings = <span class="variable language_">self</span>.client.embeddings.create(</span><br><span class="line">            model=<span class="string">&quot;embedding-3&quot;</span>,</span><br><span class="line">            <span class="built_in">input</span>=texts</span><br><span class="line">        )</span><br><span class="line">        <span class="keyword">return</span> [embeddings.embedding <span class="keyword">for</span> embeddings <span class="keyword">in</span> embeddings.data]</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">embed_query</span>(<span class="params">self, text: <span class="built_in">str</span></span>) -&gt; <span class="type">List</span>[<span class="built_in">float</span>]:</span><br><span class="line">        <span class="keyword">return</span> <span class="variable language_">self</span>.embed_documents([text])[<span class="number">0</span>]</span><br><span class="line">        </span><br><span class="line"></span><br><span class="line"><span class="comment"># 遍历文件路径并把实例化的loader存放在loaders里</span></span><br><span class="line">loaders = []</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> file_path <span class="keyword">in</span> file_paths:</span><br><span class="line">    file_type = file_path.split(<span class="string">&#x27;.&#x27;</span>)[-<span class="number">1</span>]</span><br><span class="line">    <span class="keyword">if</span> file_type == <span class="string">&#x27;pdf&#x27;</span>:</span><br><span class="line">        loaders.append(PyMuPDFLoader(file_path))</span><br><span class="line">    <span class="keyword">elif</span> file_type == <span class="string">&#x27;md&#x27;</span>:</span><br><span class="line">        loaders.append(UnstructuredMarkdownLoader(file_path))</span><br><span class="line">texts = []</span><br><span class="line"><span class="keyword">for</span> loader <span class="keyword">in</span> loaders: texts.extend(loader.load())</span><br><span class="line">text = texts[<span class="number">1</span>]</span><br><span class="line"><span class="comment"># print(f&quot;每一个元素的类型：&#123;type(text)&#125;.&quot;, </span></span><br><span class="line"><span class="comment">#     f&quot;该文档的描述性数据：&#123;text.metadata&#125;&quot;, </span></span><br><span class="line"><span class="comment">#     f&quot;查看该文档的内容:\n&#123;text.page_content[0:]&#125;&quot;, </span></span><br><span class="line"><span class="comment">#     sep=&quot;\n------\n&quot;)</span></span><br><span class="line"><span class="keyword">from</span> langchain_text_splitters <span class="keyword">import</span> RecursiveCharacterTextSplitter</span><br><span class="line"></span><br><span class="line"><span class="comment"># 切分文档</span></span><br><span class="line">text_splitter = RecursiveCharacterTextSplitter(</span><br><span class="line">    chunk_size=<span class="number">500</span>, chunk_overlap=<span class="number">50</span>)</span><br><span class="line"></span><br><span class="line">split_docs = text_splitter.split_documents(texts)</span><br><span class="line"><span class="keyword">from</span> zhipuai_embedding <span class="keyword">import</span> ZhipuAIEmbeddings</span><br><span class="line">embedding = ZhipuAIEmbeddings()</span><br><span class="line">persist_directory = <span class="string">&#x27;./chroma&#x27;</span></span><br><span class="line"></span><br><span class="line">vectordb = Chroma.from_documents(</span><br><span class="line">    documents=split_docs,</span><br><span class="line">    embedding=embedding,</span><br><span class="line">    persist_directory=persist_directory</span><br><span class="line">)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;向量库中存储的数量：<span class="subst">&#123;vectordb._collection.count()&#125;</span>&quot;</span>)</span><br><span class="line"><span class="comment">#检索</span></span><br><span class="line">question=<span class="string">&quot;输入问题&quot;</span></span><br><span class="line">sim_docs = vectordb.similarity_search(question,k=<span class="number">3</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;检索到的内容数：<span class="subst">&#123;<span class="built_in">len</span>(sim_docs)&#125;</span>&quot;</span>)</span><br><span class="line"><span class="comment">#输出检索到的位置</span></span><br><span class="line"><span class="keyword">for</span> i, sim_doc <span class="keyword">in</span> <span class="built_in">enumerate</span>(sim_docs):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;检索到的第<span class="subst">&#123;i&#125;</span>个内容: \n<span class="subst">&#123;sim_doc.page_content[:<span class="number">200</span>]&#125;</span>&quot;</span>, end=<span class="string">&quot;\n--------------\n&quot;</span>)</span><br></pre></td></tr></table></figure>
+<h1 id="构建RAG应用"><a href="#构建RAG应用" class="headerlink" title="构建RAG应用"></a>构建RAG应用</h1><p><strong>基于LangChain调用智谱Ai</strong>（需要自定义一个llm，这里已经封装好了zhipuai_llm.py）</p>
+<ul>
+<li><p>构建检索问答链：使用搭建好的向量数据库，对查询问题进行找回，并将召回结果和问题结合起来输入到大模型进行回答</p>
+<ul>
+<li>1、加载向量数据库——“第三章“  <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 加载数据库</span></span><br><span class="line">vectordb = Chroma(</span><br><span class="line">    persist_directory=persist_directory,  <span class="comment"># 允许我们将persist_directory目录保存到磁盘上</span></span><br><span class="line">    embedding_function=embedding</span><br><span class="line">)</span><br><span class="line"><span class="comment">#通过as.retriever把向量数据库构造成检索器</span></span><br><span class="line">retriever=vector.as_retriever(search_kwargs=&#123;<span class="string">&quot;k&quot;</span>:<span class="number">3</span>&#125;)<span class="comment">#根据相似性进行检索，返回前k个最相似的文档</span></span><br><span class="line">docs=retriever.invoke(question)</span><br></pre></td></tr></table></figure></li>
+<li>2、创建检索链（使用LangChain的LCEL）  <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">combine_docs</span>(<span class="params">docs</span>):</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;\n\n&quot;</span>.join(doc.page_content <span class="keyword">for</span> doc <span class="keyword">in</span> docs)</span><br><span class="line"></span><br><span class="line">combiner = RunnableLambda(combine_docs)</span><br><span class="line">retrieval_chain = retriever | combiner</span><br><span class="line"></span><br><span class="line">retrieval_chain.invoke(question)</span><br></pre></td></tr></table></figure></li>
+<li>3、创建LLM  <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> os </span><br><span class="line">OPENAI_API_KEY = os.environ[<span class="string">&quot;ZHIPUAI_API_KEY&quot;</span>]</span><br><span class="line">llm = ZhipuaiLLM(model_name=<span class="string">&quot;glm-4-plus&quot;</span>, temperature=<span class="number">0.1</span>, api_key=api_key)</span><br></pre></td></tr></table></figure></li>
+<li>4、构建检索问答链  <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment">#将template通过 PromptTemplate 转为可以在LCEL中使用的类型</span></span><br><span class="line">prompt = PromptTemplate(template=template)</span><br><span class="line">qa_chain = (</span><br><span class="line">    RunnableParallel(&#123;<span class="string">&quot;context&quot;</span>: retrieval_chain, <span class="string">&quot;input&quot;</span>: RunnablePassthrough()&#125;)</span><br><span class="line">    | prompt</span><br><span class="line">    | llm</span><br><span class="line">    | StrOutputParser()</span><br><span class="line">)</span><br></pre></td></tr></table></figure></li>
+<li>智谱AI的回答（教程中的问题）<br>  <img src="https://fqtypora-test.oss-cn-chengdu.aliyuncs.com/20260406174218.png" alt="image.png"></li>
+<li>5、给检索链添加聊天记录（ChatPromptTemplate把先前的对话嵌入到语言模型中，使其具有连续对话的能力）  <figure class="highlight python"><table><tr><td class="code"><pre><span class="line">system_prompt = (</span><br><span class="line">    <span class="string">&quot;你是一个问答任务的助手。 &quot;</span></span><br><span class="line">    <span class="string">&quot;请使用检索到的上下文片段回答这个问题。 &quot;</span></span><br><span class="line">    <span class="string">&quot;如果你不知道答案就说不知道。 &quot;</span></span><br><span class="line">    <span class="string">&quot;请使用简洁的话语回答用户。&quot;</span></span><br><span class="line">    <span class="string">&quot;\n\n&quot;</span></span><br><span class="line">    <span class="string">&quot;&#123;context&#125;&quot;</span></span><br><span class="line">)</span><br><span class="line"><span class="comment"># 制定prompt template</span></span><br><span class="line">qa_prompt = ChatPromptTemplate(</span><br><span class="line">    [</span><br><span class="line">        (<span class="string">&quot;system&quot;</span>, system_prompt),</span><br><span class="line">        (<span class="string">&quot;placeholder&quot;</span>, <span class="string">&quot;&#123;chat_history&#125;&quot;</span>),</span><br><span class="line">        (<span class="string">&quot;human&quot;</span>, <span class="string">&quot;&#123;input&#125;&quot;</span>),</span><br><span class="line">    ]</span><br><span class="line">)</span><br><span class="line"><span class="comment"># 无历史记录</span></span><br><span class="line">messages = qa_prompt.invoke(</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;input&quot;</span>: <span class="string">&quot;南瓜书是什么？&quot;</span>,</span><br><span class="line">        <span class="string">&quot;chat_history&quot;</span>: [],</span><br><span class="line">        <span class="string">&quot;context&quot;</span>: <span class="string">&quot;&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">)</span><br><span class="line"><span class="comment"># 有历史记录</span></span><br><span class="line">messages = qa_prompt.invoke(</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;input&quot;</span>: <span class="string">&quot;你可以介绍一下他吗？&quot;</span>,</span><br><span class="line">        <span class="string">&quot;chat_history&quot;</span>: [</span><br><span class="line">            (<span class="string">&quot;human&quot;</span>, <span class="string">&quot;西瓜书是什么？&quot;</span>),</span><br><span class="line">            (<span class="string">&quot;ai&quot;</span>, <span class="string">&quot;西瓜书是指周志华老师的《机器学习》一书，是机器学习领域的经典入门教材之一。&quot;</span>),</span><br><span class="line">        ],</span><br><span class="line">        <span class="string">&quot;context&quot;</span>: <span class="string">&quot;&quot;</span></span><br><span class="line">    &#125;</span><br><span class="line">)</span><br></pre></td></tr></table></figure></li>
+<li>带有信息压缩的检索链（能完善用户的问题）  <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 压缩问题的系统 prompt</span></span><br><span class="line">condense_question_system_template = (</span><br><span class="line">    <span class="string">&quot;请根据聊天记录完善用户最新的问题，&quot;</span></span><br><span class="line">    <span class="string">&quot;如果用户最新的问题不需要完善则返回用户的问题。&quot;</span></span><br><span class="line">    )</span><br><span class="line"><span class="comment"># 构造 压缩问题的 prompt template</span></span><br><span class="line">condense_question_prompt = ChatPromptTemplate([</span><br><span class="line">        (<span class="string">&quot;system&quot;</span>, condense_question_system_template),</span><br><span class="line">        (<span class="string">&quot;placeholder&quot;</span>, <span class="string">&quot;&#123;chat_history&#125;&quot;</span>),</span><br><span class="line">        (<span class="string">&quot;human&quot;</span>, <span class="string">&quot;&#123;input&#125;&quot;</span>),</span><br><span class="line">    ])</span><br><span class="line"><span class="comment"># 构造检索文档的链</span></span><br><span class="line"><span class="comment"># RunnableBranch 会根据条件选择要运行的分支</span></span><br><span class="line">retrieve_docs = RunnableBranch(</span><br><span class="line">    <span class="comment"># 分支 1: 若聊天记录中没有 chat_history 则直接使用用户问题查询向量数据库</span></span><br><span class="line">    (<span class="keyword">lambda</span> x: <span class="keyword">not</span> x.get(<span class="string">&quot;chat_history&quot;</span>, <span class="literal">False</span>), (<span class="keyword">lambda</span> x: x[<span class="string">&quot;input&quot;</span>]) | retriever, ),</span><br><span class="line">    <span class="comment"># 分支 2 : 若聊天记录中有 chat_history 则先让 llm 根据聊天记录完善问题再查询向量数据库</span></span><br><span class="line">    condense_question_prompt | llm | StrOutputParser() | retriever,</span><br><span class="line">)</span><br><span class="line"><span class="comment"># 重新定义 combine_docs</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">combine_docs</span>(<span class="params">docs</span>):</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;\n\n&quot;</span>.join(doc.page_content <span class="keyword">for</span> doc <span class="keyword">in</span> docs[<span class="string">&quot;context&quot;</span>]) <span class="comment"># 将 docs 改为 docs[&quot;context&quot;]</span></span><br><span class="line"><span class="comment"># 定义问答链</span></span><br><span class="line">qa_chain = (</span><br><span class="line">    RunnablePassthrough.assign(context=combine_docs) <span class="comment"># 使用 combine_docs 函数整合 qa_prompt 中的 context</span></span><br><span class="line">    | qa_prompt <span class="comment"># 问答模板</span></span><br><span class="line">    | llm</span><br><span class="line">    | StrOutputParser() <span class="comment"># 规定输出的格式为 str</span></span><br><span class="line">)</span><br><span class="line"><span class="comment"># 定义带有历史记录的问答链</span></span><br><span class="line">qa_history_chain = RunnablePassthrough.assign(</span><br><span class="line">    context = (<span class="keyword">lambda</span> x: x) | retrieve_docs <span class="comment"># 将查询结果存为 content</span></span><br><span class="line">    ).assign(answer=qa_chain) <span class="comment"># 将最终结果存为 answer</span></span><br></pre></td></tr></table></figure></li>
+<li>完成效果：<br><img src="https://fqtypora-test.oss-cn-chengdu.aliyuncs.com/20260406174433.png" alt="image.png"></li>
+</ul>
+</li>
+<li><p>Streamlit:构建数据应用程序的交互界面的强大工具：最终部署的效果<br><img src="https://fqtypora-test.oss-cn-chengdu.aliyuncs.com/20260406174529.png" alt="image.png"></p>
+</li>
+</ul>
+<h1 id="系统评估和优化"><a href="#系统评估和优化" class="headerlink" title="系统评估和优化"></a>系统评估和优化</h1><ul>
+<li>大模型评估方法：量化评估、多维评估、构造客观题、计算答案相似度（例：利用nlkt库的bleu打分函数）、使用大模型进行评估、混合评估</li>
+</ul>
+<h2 id="评估优化生成部分"><a href="#评估优化生成部分" class="headerlink" title="评估优化生成部分"></a>评估优化生成部分</h2><pre><code>- RAG检索生成增强包含两个核心部分：检索+生成
+</code></pre>
+<ul>
+<li>提升直观回答质量</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">template_v1 = &quot;&quot;&quot;使用以下上下文来回答最后的问题。如果你不知道答案，就说你不知道，不要试图编造答 案。最多使用三句话。尽量使答案简明扼要。总是在回答的最后说“谢谢你的提问！”。 &#123;context&#125; 问题: &#123;question&#125; &quot;&quot;&quot;</span><br><span class="line">template_v2 = &quot;&quot;&quot;使用以下上下文来回答最后的问题。如果你不知道答案，就说你不知道，不要试图编造答 案。你应该使答案尽可能详细具体，但不要偏题。如果答案比较长，请酌情进行分段，以提高答案的阅读体验。 &#123;context&#125; 问题: &#123;question&#125; 有用的回答:&quot;&quot;&quot;</span><br><span class="line">template_v3 = &quot;&quot;&quot;使用以下上下文来回答最后的问题。如果你不知道答案，就说你不知道，不要试图编造答案。你应该使答案尽可能详细具体，但不要偏题。如果答案比较长，请酌情进行分段，以提高答案的阅读体验。 如果答案有几点，你应该分点标号回答，让答案清晰具体 &#123;context&#125; 问题: &#123;question&#125; 有用的回答:&quot;&quot;&quot;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>标明知识来源，提高可信度</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">template_v4 = &quot;&quot;&quot;使用以下上下文来回答最后的问题。如果你不知道答案，就说你不知道，不要试图编造答 案。你应该使答案尽可能详细具体，但不要偏题。如果答案比较长，请酌情进行分段，以提高答案的阅读体验。 如果答案有几点，你应该分点标号回答，让答案清晰具体。 请你附上回答的来源原文，以保证回答的正确性。 &#123;context&#125; 问题: &#123;question&#125; 有用的回答:&quot;&quot;&quot;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>构造思维链</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">template_v4 = &quot;&quot;&quot; 请你依次执行以下步骤： ① 使用以下上下文来回答最后的问题。如果你不知道答案，就说你不知道，不要试图编造答案。 你应该使答案尽可能详细具体，但不要偏题。如果答案比较长，请酌情进行分段，以提高答案的阅读体验。 如果答案有几点，你应该分点标号回答，让答案清晰具体。 上下文： &#123;context&#125; 问题: &#123;question&#125; 有用的回答: ② 基于提供的上下文，反思回答中有没有不正确或不是基于上下文得到的内容，如果有，回答你不知道 确保你执行了每一个步骤，不要跳过任意一个步骤。 &quot;&quot;&quot;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>增加一个指令解析</li>
+</ul>
+<h2 id="优化检索的思路"><a href="#优化检索的思路" class="headerlink" title="优化检索的思路"></a>优化检索的思路</h2><ul>
+<li>知识片段被割裂导致答案丢失</li>
+<li>query提问需要长上下文概括回答</li>
+<li>关键词误导</li>
+<li>匹配关系不合理</li>
+</ul>
+<h1 id="我的个人科研小助手"><a href="#我的个人科研小助手" class="headerlink" title="我的个人科研小助手"></a>我的个人科研小助手</h1><blockquote>
+<p>基于Langchain+智谱embedding-3+智谱GLM设计的大模型个人助手<br>源教程中使用了ChatGPT大语言模型，但是智谱送token啊，谁让它免费呢！</p>
+</blockquote>
+<p><strong>关于在远程服务器上运行加载md文件报错：解决load()文件报错zipfile.BadZipFile: File is not a zip file的问题</strong></p>
+<ul>
+<li>代码在本地是可以运行的，但是移到了服务器就报错了</li>
+<li>解决方法：我把本地环境中的nltk_data这个文件夹复制到服务器的conda环境中的lib文件夹就好了</li>
+<li>原因：可能因为是用某个镜像源导致在安装环境时这个包没有下载下来</li>
+</ul>
+<blockquote>
+<p>目的：由于写论文特别是综述时需要参考很多文献，构建RAG可以很快提取自己需要的信息，并且避免大语言模型乱编造文献的情况<br>方法：我把所有的参考文献放到如图所示的文件夹，利用智谱的embedding-3向量模型和Chroma构造一个自己的私有数据库</p>
+</blockquote>
+<center><font><b>给定论文创建向量数据库的代码截图</b></font></center>
+
+<p><img src="https://fqtypora-test.oss-cn-chengdu.aliyuncs.com/20260406174626.png" alt="image.png"></p>
+<ul>
+<li>question1：向量库生成之后发现还需要添加数据怎么办？  <figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment">#1、先加载已经生成的向量库</span></span><br><span class="line">vectordb = Chroma(persist_directory=persist_directory,embedding_function=embedding)</span><br><span class="line"><span class="comment">#2、扫描新添加文件，按照之前的步骤进行分割</span></span><br><span class="line">text_splitter = RecursiveCharacterTextSplitter(chunk_size=<span class="number">500</span>, chunk_overlap=<span class="number">50</span>)</span><br><span class="line">new_split_docs = text_splitter.split_documents(new_texts)</span><br><span class="line"><span class="comment">#3、添加到现有的向量库中</span></span><br><span class="line">vectordb.add_documents(documents=new_split_docs)</span><br></pre></td></tr></table></figure></li>
+</ul>
+<p><strong>相关提问以及回答</strong></p>
+<p><strong>1、 “非接触式检测脉搏&#x2F;生命体征的方法有哪些”相似性搜索</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">向量库中存储的数量：3145</span><br><span class="line">检索到的内容数：3</span><br><span class="line">检索到的第0个内容: </span><br><span class="line"> contactless and non-invasive monitoring of cardiovascular signals, eliminating the need for</span><br><span class="line">physical sensors or devices attached to the body.</span><br><span class="line">-----------------------------------------------------</span><br><span class="line">检索到的第1个内容: </span><br><span class="line"> 37 529–34</span><br><span class="line">Greneker E F 1997 Radar sensing of heartbeat, respiration at a distance with application of the technology </span><br><span class="line">RADAR 97 150–4</span><br><span class="line">Garbey M, Sun N, Merla A and Pavlidis I 2007 Contact-free measurement of cardiac pulse based on the </span><br><span class="line">analysis of thermal imagery IEEE Trans. Biomed. Eng. 54 1418–26</span><br><span class="line">Hülsbusch M and Blazek V 2002 Contactless mapping of rhythmical phenomena in tissue perfusion </span><br><span class="line">using PPGI Proc. SPIE 4683 110–7</span><br><span class="line">-----------------------------------------------------</span><br><span class="line">检索到的第2个内容: </span><br><span class="line"> can provide new ideas about non-contact pulse wave monitoring and cardiovascular status</span><br><span class="line">analysis, which has good practical prospects in terms of comfort. The user’s pulse wave</span><br><span class="line">can be captured by radar in a non-contact manner without wearing any sensors. This</span><br><span class="line">monitoring method brings the significant benefit of zero interference. Users can complete</span><br><span class="line">pulse wave monitoring in a non-sensory way while sleeping or working.</span><br><span class="line">Radar-based technology has been increasingly used to monitor vital signs such as</span><br><span class="line">-----------------------------------------------------</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p><strong>2、question_1 &#x3D; “非接触检测脉搏的方法有哪些”；question_2 &#x3D; “iPPG数据集有哪些？的回答”</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">大模型+知识库后回答 question_1 的结果：</span><br><span class="line">非接触检测脉搏的方法包括使用雷达技术捕捉脉搏波，以及利用视频成像和盲源分离技术进行自动化心脏脉冲测量。这些方法无需物理传感器或设备接触身体，提供了舒适且无干扰的监测方式。谢谢你的提问！</span><br><span class="line">大模型+知识库后回答 question_2 的结果：</span><br><span class="line">根据提供的上下文，iPPG数据集包括PURE、BSIPL-RPPG、UBFC-rPPG、UBFC-Phys和MMPD。谢谢你的提问！</span><br><span class="line">----------------大模型自己的回答-----------------</span><br><span class="line">（回答内容十分多此处省略）</span><br></pre></td></tr></table></figure>
+<ul>
+<li>总结：我给了下面的提示词，大模型结合数据库后回答的内容基本源自我给的论文信息，和论文贴合度很高，但是大模型自己的回答非常宽泛  <figure class="highlight python"><table><tr><td class="code"><pre><span class="line">system_prompt = (</span><br><span class="line">    <span class="string">&quot;你是一个问答任务的助手。 &quot;</span></span><br><span class="line">    <span class="string">&quot;使用以下上下文来回答最后的问题。如果你不知道答案，就说你不知道，不要试图编造答案。 &quot;</span></span><br><span class="line">    <span class="string">&quot;你应该使答案尽可能详细具体，但不要偏题。如果答案比较长，请酌情进行分段，以提高答案的阅读体验。&quot;</span></span><br><span class="line">    <span class="string">&quot;如果答案有几点，你应该分点标号回答，让答案清晰具体。&quot;</span></span><br><span class="line">    <span class="string">&quot;&#123;context&#125;&quot;</span></span><br><span class="line">    <span class="string">&quot;有用的回答: 基于提供的上下文，反思回答中有没有不正确或不是基于上下文得到的内容，如果有，回答你不知道 确保你执行了每一个步骤，不要跳过任意一个步骤。&quot;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure></li>
+</ul>
+<p><strong>3、有无历史记录关于问题：”rPPG的深度学习模型有哪些–&gt;他们的主要框架是什么”的回答</strong>:回答来源自我给的论文，很好地避免了大模型论文编造的错觉</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">向量库中存储的数量：3145</span><br><span class="line">---------不带聊天记录------------------</span><br><span class="line">文中提到的rPPG深度学习模型包括：</span><br><span class="line"></span><br><span class="line">1. **卷积神经网络（CNN）**：用于挖掘微妙的rPPG线索，但限于有限的时空感受野。</span><br><span class="line">2. **PhysFormer**：一种基于视频转换器的端到端架构，能自适应地聚合局部和全局时空特征。</span><br><span class="line"></span><br><span class="line">此外，还提到了**迁移学习**，利用在大规模图像数据集上预训练的深度学习模型来初始化rPPG任务的模型参数。</span><br><span class="line">-----------------带聊天记录--------------</span><br><span class="line">根据提供的上下文，以下是几种rPPG深度学习模型的主要框架：</span><br><span class="line"></span><br><span class="line">1. **Chen et al. (2018) 的模型**：</span><br><span class="line">   - **框架**：卷积神经网络（CNN）结合注意力机制。</span><br><span class="line">   - **功能**：建立视频帧与生理信息（如心率、呼吸率）之间的映射。</span><br><span class="line"></span><br><span class="line">2. **ˇSpetlłk et al. (2018) 的模型**：</span><br><span class="line">   - **框架**：两步CNN，包括特征提取器和心率估计器。</span><br><span class="line">   - **功能**：从视频序列中估计心率。</span><br><span class="line"></span><br><span class="line">3. **PhysFormer**：</span><br><span class="line">   - **框架**：基于视频转换器（Transformer）的端到端架构。</span><br><span class="line">   - **功能**：自适应地聚合局部和全局的时空特征，用于rPPG表示。</span><br></pre></td></tr></table></figure>
+
+<p><strong>最后把模型部署上</strong><br><img src="https://fqtypora-test.oss-cn-chengdu.aliyuncs.com/gif1.gif" alt="gif1.gif"></p>
+<p>相关代码</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> zhipuai_embedding <span class="keyword">import</span> ZhipuAIEmbeddings</span><br><span class="line"><span class="keyword">from</span> langchain_chroma <span class="keyword">import</span> Chroma</span><br><span class="line"><span class="keyword">from</span> zhipuai_llm <span class="keyword">import</span> ZhipuaiLLM</span><br><span class="line"><span class="keyword">from</span> langchain_core.prompts <span class="keyword">import</span> PromptTemplate,ChatPromptTemplate</span><br><span class="line"><span class="keyword">from</span> langchain_core.runnables <span class="keyword">import</span> RunnablePassthrough, RunnableParallel, RunnableLambda,RunnableBranch</span><br><span class="line"><span class="keyword">from</span> langchain_core.output_parsers <span class="keyword">import</span> StrOutputParser</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv, find_dotenv</span><br><span class="line"><span class="keyword">import</span> streamlit <span class="keyword">as</span> st</span><br><span class="line">_ = load_dotenv(find_dotenv()) </span><br><span class="line">api_key = os.environ[<span class="string">&#x27;ZHIPUAI_API_KEY&#x27;</span>]</span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_retriever</span>():</span><br><span class="line">    embedding = ZhipuAIEmbeddings()</span><br><span class="line">    persist_directory = <span class="string">&#x27;/amax/tyut/user/fq/workspace/datawhale_llm/llm-universe/data_base/vector_db/chroma&#x27;</span></span><br><span class="line">    <span class="comment"># 加载数据库</span></span><br><span class="line">    vectordb = Chroma(</span><br><span class="line">        persist_directory=persist_directory,</span><br><span class="line">        embedding_function=embedding</span><br><span class="line">    )</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;向量库中存储的数量：<span class="subst">&#123;vectordb._collection.count()&#125;</span>&quot;</span>)</span><br><span class="line">    <span class="keyword">return</span> vectordb.as_retriever()</span><br><span class="line"><span class="keyword">def</span> <span class="title function_">combine_docs</span>(<span class="params">docs</span>):</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;\n\n&quot;</span>.join(doc.page_content <span class="keyword">for</span> doc <span class="keyword">in</span> docs[<span class="string">&quot;context&quot;</span>]) </span><br><span class="line">    </span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_qa_history_chain</span>():</span><br><span class="line">    <span class="comment"># retriever = vectordb.as_retriever(search_kwargs=&#123;&quot;k&quot;: 3&#125;)#检测数据库里最相关的三个内容</span></span><br><span class="line">    retriever = get_retriever()</span><br><span class="line">    zhipuai_model = ZhipuaiLLM(model_name=<span class="string">&quot;glm-4-plus&quot;</span>, temperature=<span class="number">0.1</span>, api_key=api_key)</span><br><span class="line">    condense_question_system_template = (</span><br><span class="line">        <span class="string">&quot;请根据聊天记录完善用户最新的问题，&quot;</span></span><br><span class="line">        <span class="string">&quot;如果用户最新的问题不需要完善则返回用户的问题。&quot;</span></span><br><span class="line">        )</span><br><span class="line">    condense_question_prompt = ChatPromptTemplate([</span><br><span class="line">            (<span class="string">&quot;system&quot;</span>, condense_question_system_template),</span><br><span class="line">            (<span class="string">&quot;placeholder&quot;</span>, <span class="string">&quot;&#123;chat_history&#125;&quot;</span>),</span><br><span class="line">            (<span class="string">&quot;human&quot;</span>, <span class="string">&quot;&#123;input&#125;&quot;</span>),</span><br><span class="line">        ])</span><br><span class="line">    <span class="comment"># 构造检索文档的链，RunnableBranch 会根据条件选择要运行的分支</span></span><br><span class="line">    retrieve_docs = RunnableBranch(</span><br><span class="line">        <span class="comment"># 分支 1: 若聊天记录中没有  则直接使用用户问题查询向量数据库chat_history</span></span><br><span class="line">        (<span class="keyword">lambda</span> x: <span class="keyword">not</span> x.get(<span class="string">&quot;chat_history&quot;</span>, <span class="literal">False</span>), (<span class="keyword">lambda</span> x: x[<span class="string">&quot;input&quot;</span>]) | retriever, ),</span><br><span class="line">        <span class="comment"># 分支 2 : 若聊天记录中有 chat_history 则先让 zhipuai_model 根据聊天记录完善问题再查询向量数据库</span></span><br><span class="line">        condense_question_prompt | zhipuai_model | StrOutputParser() | retriever,</span><br><span class="line">    )</span><br><span class="line">    <span class="comment"># 问答链的系统prompt</span></span><br><span class="line">    system_prompt = (</span><br><span class="line">        <span class="string">&quot;你是一个问答任务的助手。 &quot;</span></span><br><span class="line">        <span class="string">&quot;使用以下上下文来回答最后的问题。如果你不知道答案，就说你不知道，不要试图编造答案。 &quot;</span></span><br><span class="line">        <span class="string">&quot;你应该使答案尽可能详细具体，但不要偏题。如果答案比较长，请酌情进行分段，以提高答案的阅读体验。&quot;</span></span><br><span class="line">        <span class="string">&quot;如果答案有几点，你应该分点标号回答，让答案清晰具体。&quot;</span></span><br><span class="line">        <span class="string">&quot;&#123;context&#125;&quot;</span></span><br><span class="line">        <span class="string">&quot;有用的回答: 基于提供的上下文，反思回答中有没有不正确或不是基于上下文得到的内容，如果有，回答你不知道 确保你执行了每一个步骤，不要跳过任意一个步骤。&quot;</span></span><br><span class="line">    )</span><br><span class="line">    <span class="comment"># 制定prompt template</span></span><br><span class="line">    qa_prompt = ChatPromptTemplate(</span><br><span class="line">        [</span><br><span class="line">            (<span class="string">&quot;system&quot;</span>, system_prompt),</span><br><span class="line">            (<span class="string">&quot;placeholder&quot;</span>, <span class="string">&quot;&#123;chat_history&#125;&quot;</span>),</span><br><span class="line">            (<span class="string">&quot;human&quot;</span>, <span class="string">&quot;&#123;input&#125;&quot;</span>),</span><br><span class="line">        ]</span><br><span class="line">    )</span><br><span class="line">    <span class="comment"># 定义chain:模板-&gt;模型-&gt;解析器</span></span><br><span class="line">    qa_chain = (RunnablePassthrough.assign(context=combine_docs) </span><br><span class="line">        | qa_prompt</span><br><span class="line">        | zhipuai_model</span><br><span class="line">        | StrOutputParser()</span><br><span class="line">    )</span><br><span class="line">    <span class="comment"># 定义带有历史记录的问答链</span></span><br><span class="line">    qa_history_chain = RunnablePassthrough.assign(context = (<span class="keyword">lambda</span> x: x) | retrieve_docs </span><br><span class="line">        ).assign(answer=qa_chain)</span><br><span class="line">    <span class="keyword">return</span> qa_history_chain</span><br><span class="line">    </span><br><span class="line"><span class="keyword">def</span> <span class="title function_">gen_response</span>(<span class="params">chain,chat_input, chat_history</span>):</span><br><span class="line">    message=chain.stream(&#123;</span><br><span class="line">        <span class="string">&quot;input&quot;</span>: chat_input,</span><br><span class="line">        <span class="string">&quot;chat_history&quot;</span>: chat_history</span><br><span class="line">    &#125;)</span><br><span class="line">    <span class="keyword">for</span> res <span class="keyword">in</span> message:</span><br><span class="line">        <span class="keyword">if</span> <span class="string">&quot;answer&quot;</span> <span class="keyword">in</span> res.keys():</span><br><span class="line">            <span class="keyword">yield</span> res[<span class="string">&quot;answer&quot;</span>]</span><br><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    st.markdown(<span class="string">&#x27;### 🦜🔗 动手学大模型应用开发&#x27;</span>)</span><br><span class="line">    <span class="comment"># 存储对话历史</span></span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;messages&quot;</span> <span class="keyword">not</span> <span class="keyword">in</span> st.session_state:</span><br><span class="line">        st.session_state.messages = []</span><br><span class="line">    <span class="comment"># 存储检索问答链</span></span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;qa_history_chain&quot;</span> <span class="keyword">not</span> <span class="keyword">in</span> st.session_state:</span><br><span class="line">        st.session_state.qa_history_chain = get_qa_history_chain()</span><br><span class="line">        <span class="comment"># 建立容器 高度为500 px</span></span><br><span class="line">    messages = st.container(height=<span class="number">550</span>)</span><br><span class="line">    <span class="comment"># 显示整个对话历史</span></span><br><span class="line">    <span class="keyword">for</span> message <span class="keyword">in</span> st.session_state.messages: <span class="comment"># 遍历对话历史</span></span><br><span class="line">            <span class="keyword">with</span> messages.chat_message(message[<span class="number">0</span>]): <span class="comment"># messages指在容器下显示，chat_message显示用户及ai头像</span></span><br><span class="line">                st.write(message[<span class="number">1</span>]) <span class="comment"># 打印内容</span></span><br><span class="line">    <span class="keyword">if</span> prompt := st.chat_input(<span class="string">&quot;Say something&quot;</span>):</span><br><span class="line">        <span class="comment"># 将用户输入添加到对话历史中</span></span><br><span class="line">        st.session_state.messages.append((<span class="string">&quot;human&quot;</span>, prompt))</span><br><span class="line">        <span class="comment"># 显示当前用户输入</span></span><br><span class="line">        <span class="keyword">with</span> messages.chat_message(<span class="string">&quot;human&quot;</span>):</span><br><span class="line">            st.write(prompt)</span><br><span class="line">        <span class="comment"># 生成回复</span></span><br><span class="line">        answer = gen_response(</span><br><span class="line">            chain=st.session_state.qa_history_chain,</span><br><span class="line">            chat_input=prompt,</span><br><span class="line">            chat_history=st.session_state.messages</span><br><span class="line">        )</span><br><span class="line">        <span class="comment"># 流式输出</span></span><br><span class="line">        <span class="keyword">with</span> messages.chat_message(<span class="string">&quot;ai&quot;</span>):</span><br><span class="line">            output = st.write_stream(answer)</span><br><span class="line">        <span class="comment"># 将输出存入st.session_state.messages</span></span><br><span class="line">        st.session_state.messages.append((<span class="string">&quot;ai&quot;</span>, output))</span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    main()</span><br><span class="line">     </span><br><span class="line"><span class="comment"># streamlit run &quot;/amax/tyut/user/fq/workspace/datawhale_llm/llm-universe/core/个人助手.py&quot;</span></span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>工程实战</category>
+      </categories>
+      <tags>
+        <tag>大模型</tag>
+        <tag>RAG</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>MiniMax H3 × ComfyUI：H200 上的音视频生成与推理加速</title>
+    <url>/posts/e851fb7f.html</url>
+    <content><![CDATA[<h1 id="MiniMax-H3-×-ComfyUI：H200-上的音视频生成与推理加速"><a href="#MiniMax-H3-×-ComfyUI：H200-上的音视频生成与推理加速" class="headerlink" title="MiniMax H3 × ComfyUI：H200 上的音视频生成与推理加速"></a>MiniMax H3 × ComfyUI：H200 上的音视频生成与推理加速</h1><p>这是一篇关于 MiniMax H3 的 ComfyUI 推理展示。实验使用 NVIDIA H200 单卡生成 768×1344、362 帧、24 FPS 的音视频内容，并比较不同推理加速组合的实际效果。</p>
+<blockquote>
+<p><strong>结果摘要：</strong> 非 Sage 路径中，TE-Speed + EasyCache 将端到端时间从 19 分 43 秒缩短到 7 分 44 秒，达到 2.55× 加速。SageAttention 可以单独或搭配 EasyCache 完成推理，但两条 Sage 成片在末尾出现明显模糊；与 TE-Speed 组合时还存在稳定性不足。</p>
+</blockquote>
+<p>本次工作围绕以下开源项目展开：</p>
+<ul>
+<li><a href="https://github.com/comfyanonymous/ComfyUI">ComfyUI</a>：推理工作流框架；</li>
+<li><a href="https://www.modelscope.cn/models/MiniMax/MiniMax-H3/">MiniMax H3</a>：音视频联合生成模型；</li>
+<li><a href="https://github.com/HELPMEEADICE/TE-Speed-MiniMaxH3-OSS">TE-Speed-MiniMaxH3-OSS</a>：MiniMax H3 推理加速方案；</li>
+<li><a href="https://github.com/thu-ml/SageAttention">SageAttention</a>：Attention 算子加速方案；</li>
+<li><a href="https://github.com/H-EmbodVis/EasyCache">EasyCache</a>：扩散采样缓存加速方案。</li>
+</ul>
+<h2 id="环境与推理配置"><a href="#环境与推理配置" class="headerlink" title="环境与推理配置"></a>环境与推理配置</h2><table>
+<thead>
+<tr>
+<th>项目</th>
+<th>配置</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>GPU</td>
+<td>NVIDIA H200，单卡</td>
+</tr>
+<tr>
+<td>PyTorch</td>
+<td>2.9.1+cu128</td>
+</tr>
+<tr>
+<td>CUDA Runtime</td>
+<td>12.8</td>
+</tr>
+<tr>
+<td>ComfyUI</td>
+<td>0.30.1</td>
+</tr>
+<tr>
+<td>Triton</td>
+<td>3.5.1</td>
+</tr>
+<tr>
+<td>SageAttention</td>
+<td>2.2.0</td>
+</tr>
+<tr>
+<td>comfy-aimdo</td>
+<td>0.4.11</td>
+</tr>
+<tr>
+<td>comfy-kitchen</td>
+<td>0.2.26</td>
+</tr>
+<tr>
+<td>分辨率</td>
+<td>768×1344</td>
+</tr>
+<tr>
+<td>视频长度</td>
+<td>362 帧，24 FPS</td>
+</tr>
+<tr>
+<td>采样步数</td>
+<td>20 steps</td>
+</tr>
+<tr>
+<td>随机种子</td>
+<td>42</td>
+</tr>
+<tr>
+<td>Sampler &#x2F; Scheduler</td>
+<td><code>res_multistep</code> &#x2F; <code>simple</code></td>
+</tr>
+</tbody></table>
+<h3 id="关于-CUDA-优化路径"><a href="#关于-CUDA-优化路径" class="headerlink" title="关于 CUDA 优化路径"></a>关于 CUDA 优化路径</h3><p>本次推理仍然运行在 H200 GPU 上，Sage 配置也确认启用了 SageAttention 的 CUDA kernel；但启动日志提示，当前 PyTorch 为 <code>cu128</code>，而 comfy-kitchen 的优化 CUDA&#x2F;Triton 算子要求 <code>cu130+</code>。因此，comfy-kitchen 的 CUDA 和 Triton 后端在本次测试中处于禁用状态，相关操作回退到 eager 实现。</p>
+<p>这不会使本次结果失效，但意味着表中的耗时代表“当前实际环境”的性能，而不是所有优化 CUDA 算子完整启用后的理论最佳性能。</p>
+<h2 id="使用的模型"><a href="#使用的模型" class="headerlink" title="使用的模型"></a>使用的模型</h2><table>
+<thead>
+<tr>
+<th>用途</th>
+<th>模型文件</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T2VA 主模型</td>
+<td><code>minimax_h3_fl2va_pruned_bf16.safetensors</code></td>
+</tr>
+<tr>
+<td>文本编码器</td>
+<td><code>qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors</code></td>
+</tr>
+<tr>
+<td>视频 VAE</td>
+<td><code>minimax_h3_video_vae_fp16.safetensors</code></td>
+</tr>
+<tr>
+<td>音频 VAE</td>
+<td><code>minimax_h3_audio_vae_fp32.safetensors</code></td>
+</tr>
+</tbody></table>
+<p>主模型以 BF16 运行，文本编码器采用 NVFP4&#x2F;AWQ 量化，视频 VAE 为 FP16，音频 VAE 为 FP32。</p>
+<h2 id="Prompt"><a href="#Prompt" class="headerlink" title="Prompt"></a>Prompt</h2><p>原始分镜描述经过 MiniMax H3 的 Context-IR 前处理，整理为同时覆盖画面、动作、镜头和声音的实际推理 prompt。内容是一位老年图书修复师在安静修复室中修补古籍的 15 秒纪实镜头。</p>
+<details>
+<summary><strong>展开查看实际推理 Prompt</strong></summary>
+
+<figure class="highlight text"><table><tr><td class="code"><pre><span class="line">integrated_multimodal_description: [Shot 1] Cinematic, close-up shot with a slight handheld camera shake and a shallow depth of field, focusing on a wooden table in a quiet restoration room. Soft, natural afternoon window light spills from the left. An on-screen elderly male book restorer is mending a yellowed ancient book. His visible hands have thick finger joints, with tiny pieces of paper and dried paste stains embedded in the nail beds. He wears a gray cotton and linen work uniform with dark blue sleeves. His right hand uses metal tweezers to pick up a delicate, thin piece of repair paper featuring manually torn frayed edges and clearly visible fibers. He gently lays the paper over a damaged area of the ancient page, while the fingertips of his left hand press down on the patch with a steady, gentle motion. The camera smoothly pedestals up and tilts up, shifting focus from his hands to his face. The man has short gray hair with the temples shaved very short, and his face is marked by deep creases and age spots. His gaze is lowered, carefully observing the fit of the patch through a circular magnifying glass held near his eye. The natural light reveals intricate facial textures: real skin sagging, fine stubble, faint capillaries, and asymmetric eyebrow bones. He maintains a calm expression, blinking extremely slowly. He then straightens his upper body, takes the magnifying glass away from his face, and gently rubs the bridge of his nose with his right thumb and index finger, his shoulders dropping slightly in a subtle reaction of fatigue. Lowering his head again to inspect the mended page, his mouth twitches slightly at the corner, revealing a barely perceptible look of quiet relief.</span><br><span class="line"></span><br><span class="line">overall_soundscape: A hushed room tone establishes the quiet environment, punctuated by the audible, crisp rustle of thin paper fibers and the faint metallic click of tweezers. As the left hand presses the patch, a soft, dry rubbing sound is clearly heard against the ancient page. The continuous subtle rustle of heavy cotton and linen fabric accompanies his posture adjustments as he straightens up. A distinct skin-on-skin friction sound occurs as he rubs the bridge of his nose, followed by a soft, pronounced exhalation of breath.</span><br><span class="line"></span><br><span class="line">non_diegetic_music: N/A</span><br></pre></td></tr></table></figure>
+
+</details>
+
+<h2 id="加速配置与测试方法"><a href="#加速配置与测试方法" class="headerlink" title="加速配置与测试方法"></a>加速配置与测试方法</h2><table>
+<thead>
+<tr>
+<th>组件</th>
+<th>参数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>TE-Speed</td>
+<td><code>processing_control_value=0.12</code>、窗口 <code>10%–90%</code>、<code>mcs=2</code>、<code>device=auto</code>、<code>cache_depth=0.75</code></td>
+</tr>
+<tr>
+<td>EasyCache</td>
+<td><code>reuse_threshold=0.10</code>、窗口 <code>15%–95%</code></td>
+</tr>
+<tr>
+<td>SageAttention</td>
+<td>ComfyUI 服务使用 <code>--use-sage-attention</code></td>
+</tr>
+<tr>
+<td>非 Sage Attention</td>
+<td>ComfyUI 服务使用 <code>--use-pytorch-cross-attention</code></td>
+</tr>
+</tbody></table>
+<p>所有配置使用相同的 prompt、seed、分辨率、帧数、采样器和步数。Sage 与非 Sage 使用独立服务，ComfyUI 以 <code>--cache-none</code> 启动，避免相同输入命中节点结果缓存。表中记录单次正式运行的采样时间和端到端时间，因此结果适合展示当前环境下的实际趋势，不应视为多次重复统计后的通用 benchmark。</p>
+<h2 id="推理结果"><a href="#推理结果" class="headerlink" title="推理结果"></a>推理结果</h2><h3 id="非-Sage-路径"><a href="#非-Sage-路径" class="headerlink" title="非 Sage 路径"></a>非 Sage 路径</h3><table>
+<thead>
+<tr>
+<th>配置</th>
+<th align="right">采样时间</th>
+<th align="right">端到端时间</th>
+<th align="right">相对 Baseline</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Baseline</td>
+<td align="right">19 分 07 秒</td>
+<td align="right">19 分 43 秒</td>
+<td align="right">1.00×</td>
+<td>完成</td>
+</tr>
+<tr>
+<td>TE-Speed</td>
+<td align="right">10 分 23 秒</td>
+<td align="right">10 分 58 秒</td>
+<td align="right">1.80×</td>
+<td>完成</td>
+</tr>
+<tr>
+<td>EasyCache</td>
+<td align="right">13 分 22 秒</td>
+<td align="right">13 分 58 秒</td>
+<td align="right">1.41×</td>
+<td>完成</td>
+</tr>
+<tr>
+<td>TE-Speed + EasyCache</td>
+<td align="right">7 分 08 秒</td>
+<td align="right">7 分 44 秒</td>
+<td align="right">2.55×</td>
+<td>完成</td>
+</tr>
+</tbody></table>
+<p>在这次测试中，TE-Speed + EasyCache 获得了最快的完整推理结果，端到端耗时相比 Baseline 减少约 60.8%。</p>
+<h3 id="SageAttention-路径"><a href="#SageAttention-路径" class="headerlink" title="SageAttention 路径"></a>SageAttention 路径</h3><table>
+<thead>
+<tr>
+<th>配置</th>
+<th align="right">采样时间</th>
+<th align="right">端到端时间</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SageAttention</td>
+<td align="right">9 分 53 秒</td>
+<td align="right">10 分 30 秒</td>
+<td>完成，末尾模糊</td>
+</tr>
+<tr>
+<td>EasyCache + SageAttention</td>
+<td align="right">7 分 25 秒</td>
+<td align="right">8 分 02 秒</td>
+<td>完成，末尾模糊</td>
+</tr>
+<tr>
+<td>TE-Speed + SageAttention</td>
+<td align="right">—</td>
+<td align="right">—</td>
+<td>未完成</td>
+</tr>
+<tr>
+<td>TE-Speed + EasyCache + SageAttention</td>
+<td align="right">—</td>
+<td align="right">—</td>
+<td>未完成</td>
+</tr>
+</tbody></table>
+<p>SageAttention 单独使用，以及与 EasyCache 组合使用时可以完成推理；加入 TE-Speed 后，当前组合仍存在稳定性问题。</p>
+<p>由于两条异常结果唯一共同的加速组件是 SageAttention，而相同模型、prompt、seed 与采样设置下的非 Sage 视频末尾保持清晰，当前证据指向 <strong>SageAttention 在这条长时序 MiniMax H3 推理路径上的数值精度兼容性问题</strong>。</p>
+<blockquote>
+<p><strong>结果边界：</strong> 这组测试聚焦速度和运行完成情况，没有进行 SSIM、PSNR 或音频响度评估。因此，“最快”只表示耗时最低，不等同于生成质量最佳。</p>
+</blockquote>
+<h2 id="视频展示"><a href="#视频展示" class="headerlink" title="视频展示"></a>视频展示</h2><p>下面展示本次测试中全部 6 个成功生成的视频。每个视频均可通过自身控制条单独播放，以便清楚对比画面与音频效果。</p>
+<div class="h3-video-wall">
+<div class="h3-video-grid">
+<article class="h3-video-card"><div class="h3-video-card-title"><span>Baseline</span><small>19 分 43 秒</small></div><video controls preload="metadata" playsinline data-h3-video><source src="/video/non-sage/t2va/base_00001_.mp4" type="video/mp4"></video></article>
+<article class="h3-video-card"><div class="h3-video-card-title"><span>TE-Speed</span><small>10 分 58 秒 · 1.80×</small></div><video controls preload="metadata" playsinline data-h3-video><source src="/video/non-sage/t2va/te_00001_.mp4" type="video/mp4"></video></article>
+<article class="h3-video-card"><div class="h3-video-card-title"><span>EasyCache</span><small>13 分 58 秒 · 1.41×</small></div><video controls preload="metadata" playsinline data-h3-video><source src="/video/non-sage/t2va/easycache_00001_.mp4" type="video/mp4"></video></article>
+<article class="h3-video-card"><div class="h3-video-card-title"><span class="h3-video-card-label-compact">TE-Speed + EasyCache</span><small>7 分 44 秒 · 2.55×</small></div><video controls preload="metadata" playsinline data-h3-video><source src="/video/non-sage/t2va/te_easycache_00001_.mp4" type="video/mp4"></video></article>
+<article class="h3-video-card"><div class="h3-video-card-title"><span>SageAttention</span><small>10 分 30 秒</small></div><video controls preload="metadata" playsinline data-h3-video><source src="/video/sage/t2va/sageattention_00001_.mp4" type="video/mp4"></video></article>
+<article class="h3-video-card"><div class="h3-video-card-title"><span class="h3-video-card-label-compact">EasyCache + SageAttention</span><small>8 分 02 秒</small></div><video controls preload="metadata" playsinline data-h3-video><source src="/video/sage/t2va/easycache_sageattention_00001_.mp4" type="video/mp4"></video></article>
+</div>
+</div>
+
+<style>
+  .h3-video-wall { margin: 1.5rem 0; }
+  .h3-video-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+  .h3-video-card { overflow: hidden; border: 1px solid rgba(58, 74, 92, .13); border-radius: .8rem; background: rgba(255, 255, 255, .72); box-shadow: 0 .25rem .9rem rgba(30, 43, 61, .07); }
+  .h3-video-card-title { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; padding: .7rem .8rem; font-weight: 650; font-size: .95rem; }
+  .h3-video-card-label-compact { font-size: .78rem; letter-spacing: -.015em; line-height: 1.25; white-space: nowrap; }
+  .h3-video-card-title small { flex: none; color: #7a8491; font-size: .76rem; font-weight: 500; white-space: nowrap; }
+  .h3-video-card video { display: block; width: 100%; aspect-ratio: 9 / 16; background: #111; object-fit: contain; }
+  @media (max-width: 900px) { .h3-video-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .h3-video-grid { grid-template-columns: 1fr; } .h3-video-card-title { font-size: 1rem; } }
+</style>
+
+<p>TE-Speed + SageAttention 以及 TE-Speed + EasyCache + SageAttention 未生成可展示的视频。</p>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>这次测试表明，在当前 H200 环境中，ComfyUI 可以完成 MiniMax H3 的高分辨率音视频生成；TE-Speed 和 EasyCache 组合能够显著减少推理时间。SageAttention 路径虽然能够完成推理，但当前既有末尾清晰度问题，也与 TE-Speed 存在稳定性问题。</p>
+]]></content>
+      <categories>
+        <category>工程实践</category>
+      </categories>
+      <tags>
+        <tag>MiniMax H3</tag>
+        <tag>ComfyUI</tag>
+        <tag>推理加速</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>大模型基础</title>
+    <url>/posts/2a1e6489.html</url>
+    <content><![CDATA[<h1 id="显卡"><a href="#显卡" class="headerlink" title="显卡"></a>显卡</h1><blockquote>
+<p>GPU&#x2F;CPU、CUDA、TPU&#x2F;苹果、各种常见显卡介绍</p>
+</blockquote>
+<ol>
+<li>CPU：通用，穿行强，AI计算慢，费电</li>
+<li>GPU：并行强，功耗大，面积大</li>
+<li>CUDA：指挥GPU干活的语言</li>
+<li>TPU：Tensor Processing Unit 张量处理器，Genmini生态，云端&#x2F;数据中心，高并发高算力高功耗</li>
+<li>NPU：Nerual Processing Unit 神经网络处理器，AI专用，硬件级优化矩阵乘加（MAC），低延迟，高效能比，手机&#x2F;PC&#x2F;摄像头，华为&#x2F;苹果&#x2F;高通，低功耗实时推理<br><img src="https://fqtypora-test.oss-cn-chengdu.aliyuncs.com/20260407190531.png" alt="image.png"></li>
+</ol>
+<h1 id="模型量化、加速、剪枝"><a href="#模型量化、加速、剪枝" class="headerlink" title="模型量化、加速、剪枝"></a>模型量化、加速、剪枝</h1><ul>
+<li>模型量化：把模型中原本使用的高精度浮点数（FP32）表示的权重和激活值映射到低精度（FP16&#x2F;BF16&#x2F;INT8&#x2F;INT4），下面是一些基础量化方法：<ul>
+<li>PTQ 训练后量化——模型训练完成后直接对权重进行转换，优点：速度快；缺点：在极低精度下有明显的精度损失</li>
+<li>QAT 量化感知训练——在模型训练或微调的最后阶段，在前向传播中模拟量化误差，通过反向传播让模型学习适应误差；优点：精度保持得好；缺点计算成本较高</li>
+</ul>
+</li>
+<li>LLM的前沿量化方法：<ul>
+<li>GPTQ：一种基于二阶量化（Hessian矩阵）的weight-only量化方法，能在单张GPU上快速将上千亿参数模型量化到3-bit或4-bit，且精度损失极小</li>
+<li>AWQ：并非所有权重都同等重要，只保留对激活值权重最重要的1%权重为FP16，其余为INT4，，极大保留模型的能力</li>
+<li>NF4：QLoRa提出的一种理论上的最优4-bit量化数据类型，专用于高效微调</li>
+<li>GGUF（GPT-Generated Unified Format）：由llama.cpp团队提出，取代了早期的GGML，是目前本地部署大语言模型的最主流的文件格式，核心技术包括：<ul>
+<li>大一统与自包含</li>
+<li>极佳的向后兼容与扩展性</li>
+<li>内存映射（nmap）</li>
+<li>非均匀混合量化（K-Quants）</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>模型压缩：从结构层面减少模型参数量和计算量的技术<ul>
+<li>网络剪枝：减去不重要的神经元，使得网络变稀疏<ul>
+<li>非结构化剪枝：随机将权重的某些小值设为0，优点是精度高，缺点是现代GPU对非规则化稀疏矩阵的加速支持有限</li>
+<li>结构化剪枝：直接剪掉整个通道，滤波器或注意力头，优点是能直接带来物理硬件的上的速度提升和显存降低</li>
+</ul>
+</li>
+<li>知识蒸馏：让一个参数量少，推理快的小模型（student）去学习一个参数量大，精度高的大模型（teacher）的输出行为</li>
+<li>低秩分解：把模型巨大的参数矩阵分解为两个或多个低秩小矩阵相乘；经典的ALBERT：对词嵌入矩阵进行分解以及当前及其火热的LoRa</li>
+</ul>
+</li>
+<li>模型加速：旨在提高模型推理吞吐量和降低延迟<ul>
+<li>算法和架构层的加速<ul>
+<li>KV Cache：在自回归生成中，缓存历史token的key和value<ul>
+<li>PagedAttention（vLLM的核心）：借鉴操作系统内存分页的思想，解决KV Cache显存碎片化问题，将显存利用率从20%提升到90%以上，提升并发吞吐量</li>
+</ul>
+</li>
+<li>高效注意力机制<ul>
+<li>MQA（Muti-Query Attention）&#x2F;GQA（Grouped-Query Attention）：多个Query共享同一组KV Head，大幅减少KV Cache的显存占用并提升读取速度（Llama-2&#x2F;3，Qwen等模型标配）</li>
+<li>FlashAttention：一种硬件感知的算法，通过优化GPU HBM（高宽带内存）和SRAM之间的读取次数，将Attention计算的速度提升数倍</li>
+</ul>
+</li>
+<li>Continuous Batching（动态批处理）：不再等待整个Batch的句子全部生成完毕，而是细粒度到token级别，有句子生成完毕立即插入新的句子，最大化GPU利用率</li>
+</ul>
+</li>
+<li>算子融合与编译优化：<ul>
+<li>算子融合Kernel Fusion：将多个连续的简单操作（如矩阵乘法+LayerNorm+ReLU）合并成一个底层的CUDA kernel，减少GPU内存读写的开销</li>
+<li>AI编译器：自动计算图进行优化</li>
+</ul>
+</li>
+<li>主流推理加速引擎：<ul>
+<li>NVDIA TensorRT&#x2F;TensorRT-LLM：NVDIA官方，支持深度的算子融合和极致的量化（FP8）</li>
+<li>ONNX Runtime：：微软的，跨平台支持，常用于端侧部署</li>
+<li>OpenVINO：Intel官方，针对集显和CPU优化</li>
+<li>vLLM：主流的开源LLM推理框架，以PagedAttention闻名</li>
+<li>llama.cpp：纯C&#x2F;C++编写，极致榨干CPU性能，本地&#x2F;边缘部署大模型的首选</li>
+<li>TGI（Text Generation Interrence）：Hugging Face官方推理框架，适合生产环境</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>总结：<ul>
+<li>移动端&#x2F;边缘设备：模型往往先经过知识蒸馏或者剪枝，然后进行INT8量化，最后转换为ONNX&#x2F;NCNN&#x2F;MNN格式调动移动端NPU&#x2F;GPU进行硬件推理加速</li>
+<li>云端LLM部署：通常下载原始模型，使用AWQ&#x2F;GPTQ&#x2F;FP8等技术进行量化 （降低显存门槛使得单卡可以装下），然后依托vLLM或者TensorRT-LLM框架（利用PagedAttention，Continuous Batching和FlashAttention）提供高并发，低延迟的API服务。</li>
+</ul>
+</li>
+</ul>
+<h1 id="大数据处理技术：Hadoop，Spark与Hive"><a href="#大数据处理技术：Hadoop，Spark与Hive" class="headerlink" title="大数据处理技术：Hadoop，Spark与Hive"></a>大数据处理技术：Hadoop，Spark与Hive</h1><ul>
+<li>Hadoop是处理大数据的工具，由多个组件构成HDFS,Yarn，MapReduce</li>
+<li>Hive是查询大数据的SQL语言，将查询语句解析为MapReduce函数</li>
+<li>Spark：通过内存强化性能的MapReduce，因为数据处理的中间结果会存储在磁盘里面，反复读写磁盘会拉慢速度</li>
+<li>Yarn是管理每个MapReduce任务资源的容器</li>
+<li>大数据处理场景：离线和实时<ul>
+<li>离线：一批一批地处理</li>
+<li>实时：流处理</li>
+</ul>
+</li>
+</ul>
+<h1 id="transformer"><a href="#transformer" class="headerlink" title="transformer"></a>transformer</h1><ol>
+<li>tanformer是一个基于self-attention的encoder-decoder的seq2seq模型，encoder层包括：input-位置编码-多头自注意力-And&amp;Norm-FNN，decoder层包括：input-位置编码-掩码自注意力-Add&amp;Norm-多头注意力-Add&amp;Norm-FNN-Add&amp;Norm-linear-softmax-output</li>
+<li>self-attention是通过计算Q,K,V三中向量嵌入的关系，让序列中每个元素能够关注到序列中其他相关元素的信息，从而更好捕捉序列内部的依赖关系，公式中的除以$\sqrt{d_k}$是因为要防止$QK^T$太大导致的梯度消失</li>
+</ol>
+<h1 id="对比SFT，RLHF，DPO的优势"><a href="#对比SFT，RLHF，DPO的优势" class="headerlink" title="对比SFT，RLHF，DPO的优势"></a>对比SFT，RLHF，DPO的优势</h1><ul>
+<li>SFT：使用人工标注的高质量量指令-响应数据，在预训练模型的基础上进行监督学习，让模型初步学习遵循指令，生成符合预期的输出</li>
+<li>RLHF：reinforcement Learning form human，基于人类反馈的强化学习，得到SFT初始模型之后，手机人类对模输出的偏好排序数据，训练奖励模型RM，以RM的输出作为反馈，用强化学习PPO优化模型</li>
+</ul>
+<h1 id="RAG的优化技巧"><a href="#RAG的优化技巧" class="headerlink" title="RAG的优化技巧"></a>RAG的优化技巧</h1><p><img src="https://fqtypora-test.oss-cn-chengdu.aliyuncs.com/20260408112428.png" alt="image.png"></p>
+<ul>
+<li>摘要检索<ul>
+<li>把文档输入LLM，生成该文本块的摘要，对摘要向量化也存到数据库并生成摘要和文本块之间的映射</li>
+</ul>
+</li>
+<li>子问题检索<ul>
+<li>把文档输入LLM，让LLM生成这个文档可以回答的潜在问题，把潜在问题也存入向量库并建立与原始文本块的映射</li>
+</ul>
+</li>
+<li>句子窗口检索<ul>
+<li>把文档切分成独立的句子并进行向量化，这是检索的“锚点”，使用用户问题检索最相关的句子，并从文档该处向前或向后扩展k个句子，形成一个包含完整上下文的文本窗口</li>
+</ul>
+</li>
+<li>多路召回<ul>
+<li>向量检索，关键词检索</li>
+</ul>
+</li>
+<li>精排rerank<ul>
+<li>使用计算成本更高的模型对候选集重新排序，考虑用户问题和候选文档更深度的相关性判断，而不仅仅是向量距离</li>
+</ul>
+</li>
+<li>查询改写：<ul>
+<li>让LLM把用户不规范的问题改写成一个或多个清晰，适合检索的查询</li>
+</ul>
+</li>
+<li>合理利用元数据<ul>
+<li>元数据：描述数据的数据，例如文档的类型，作者，创建日期，来源</li>
+<li>向量检索前根据元数据筛选一个文档子集</li>
+<li>在召回或者精排阶段为具有特定元数据的文档赋予更高的权重</li>
+</ul>
+</li>
+<li>生成阶段：设计合理的提示词模板如：<ul>
+<li>请基于以下参考资料回答问题，如果不清楚就回答不清楚，问题：{用户问题}？参考资料：：{文档1}{文档2}……</li>
+</ul>
+</li>
+<li>迭代式精炼回答<ul>
+<li>refine：串行：使用问题和知识块1生成答案1，再把答案1和知识块2输入LLM获得答案2</li>
+<li>批处理refine模式：批量化改造</li>
+</ul>
+</li>
+<li>树状总结<ul>
+<li><img src="https://fqtypora-test.oss-cn-chengdu.aliyuncs.com/20260408114654.png" alt="image.png|450"></li>
+</ul>
+</li>
+</ul>
+]]></content>
+      <categories>
+        <category>理论基础</category>
+      </categories>
+      <tags>
+        <tag>大模型</tag>
+      </tags>
+  </entry>
 </search>

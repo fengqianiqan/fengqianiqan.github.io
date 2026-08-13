@@ -1,0 +1,431 @@
+<!DOCTYPE html><html lang="en" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>MiniMax H3 × ComfyUI：H200 上的音视频生成与推理加速 | Qian's Tech Space</title><meta name="author" content="Qian Feng"><meta name="copyright" content="Qian Feng"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="ffffff"><meta name="description" content="MiniMax H3 × ComfyUI：H200 上的音视频生成与推理加速这是一篇关于 MiniMax H3 的 ComfyUI 推理展示。实验使用 NVIDIA H200 单卡生成 768×1344、362 帧、24 FPS 的音视频内容，并比较不同推理加速组合的实际效果。  结果摘要： 非 Sage 路径中，TE-Speed + EasyCache 将端到端时间从 19 分 43 秒缩短到">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MiniMax H3 × ComfyUI：H200 上的音视频生成与推理加速">
+<meta property="og:url" content="https://fengqianiqan.github.io/posts/e851fb7f.html">
+<meta property="og:site_name" content="Qian&#39;s Tech Space">
+<meta property="og:description" content="MiniMax H3 × ComfyUI：H200 上的音视频生成与推理加速这是一篇关于 MiniMax H3 的 ComfyUI 推理展示。实验使用 NVIDIA H200 单卡生成 768×1344、362 帧、24 FPS 的音视频内容，并比较不同推理加速组合的实际效果。  结果摘要： 非 Sage 路径中，TE-Speed + EasyCache 将端到端时间从 19 分 43 秒缩短到">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://fengqianiqan.github.io/img/paidaxin.jpg">
+<meta property="article:published_time" content="2026-08-13T10:00:00.000Z">
+<meta property="article:modified_time" content="2026-08-13T07:55:11.362Z">
+<meta property="article:author" content="Qian Feng">
+<meta property="article:tag" content="ComfyUI">
+<meta property="article:tag" content="MiniMax H3">
+<meta property="article:tag" content="推理加速">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://fengqianiqan.github.io/img/paidaxin.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "MiniMax H3 × ComfyUI：H200 上的音视频生成与推理加速",
+  "url": "https://fengqianiqan.github.io/posts/e851fb7f.html",
+  "image": "https://fengqianiqan.github.io/img/paidaxin.jpg",
+  "datePublished": "2026-08-13T10:00:00.000Z",
+  "dateModified": "2026-08-13T07:55:11.362Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "Qian Feng",
+      "url": "https://fengqianiqan.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://fengqianiqan.github.io/posts/e851fb7f.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', 'ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"No results found for: ${query}","hits_stats":"${hits} articles found"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: 'Copy Successful',
+    error: 'Copy Failed',
+    noSupport: 'Browser Not Supported'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: 'Just now',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: 'Load More'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'MiniMax H3 × ComfyUI：H200 上的音视频生成与推理加速',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 8.1.1"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">Loading...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (false) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/paidaxin.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">3</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">5</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">3</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> about</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">Qian's Tech Space</span></a><a class="nav-page-title" href="/"><span class="site-name">MiniMax H3 × ComfyUI：H200 上的音视频生成与推理加速</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  Back to Home</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> Search</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> about</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">MiniMax H3 × ComfyUI：H200 上的音视频生成与推理加速</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">Created</span><time class="post-meta-date-created" datetime="2026-08-13T10:00:00.000Z" title="Created 2026-08-13 18:00:00">2026-08-13</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">Updated</span><time class="post-meta-date-updated" datetime="2026-08-13T07:55:11.362Z" title="Updated 2026-08-13 15:55:11">2026-08-13</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E5%B7%A5%E7%A8%8B%E5%AE%9E%E8%B7%B5/">工程实践</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">Post Views:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="MiniMax-H3-×-ComfyUI：H200-上的音视频生成与推理加速"><a href="#MiniMax-H3-×-ComfyUI：H200-上的音视频生成与推理加速" class="headerlink" title="MiniMax H3 × ComfyUI：H200 上的音视频生成与推理加速"></a>MiniMax H3 × ComfyUI：H200 上的音视频生成与推理加速</h1><p>这是一篇关于 MiniMax H3 的 ComfyUI 推理展示。实验使用 NVIDIA H200 单卡生成 768×1344、362 帧、24 FPS 的音视频内容，并比较不同推理加速组合的实际效果。</p>
+<blockquote>
+<p><strong>结果摘要：</strong> 非 Sage 路径中，TE-Speed + EasyCache 将端到端时间从 19 分 43 秒缩短到 7 分 44 秒，达到 2.55× 加速。SageAttention 可以单独或搭配 EasyCache 完成推理，但两条 Sage 成片在末尾出现明显模糊；与 TE-Speed 组合时还存在稳定性不足。</p>
+</blockquote>
+<p>本次工作围绕以下开源项目展开：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/comfyanonymous/ComfyUI">ComfyUI</a>：推理工作流框架；</li>
+<li><a target="_blank" rel="noopener" href="https://www.modelscope.cn/models/MiniMax/MiniMax-H3/">MiniMax H3</a>：音视频联合生成模型；</li>
+<li><a target="_blank" rel="noopener" href="https://github.com/HELPMEEADICE/TE-Speed-MiniMaxH3-OSS">TE-Speed-MiniMaxH3-OSS</a>：MiniMax H3 推理加速方案；</li>
+<li><a target="_blank" rel="noopener" href="https://github.com/thu-ml/SageAttention">SageAttention</a>：Attention 算子加速方案；</li>
+<li><a target="_blank" rel="noopener" href="https://github.com/H-EmbodVis/EasyCache">EasyCache</a>：扩散采样缓存加速方案。</li>
+</ul>
+<h2 id="环境与推理配置"><a href="#环境与推理配置" class="headerlink" title="环境与推理配置"></a>环境与推理配置</h2><table>
+<thead>
+<tr>
+<th>项目</th>
+<th>配置</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>GPU</td>
+<td>NVIDIA H200，单卡</td>
+</tr>
+<tr>
+<td>PyTorch</td>
+<td>2.9.1+cu128</td>
+</tr>
+<tr>
+<td>CUDA Runtime</td>
+<td>12.8</td>
+</tr>
+<tr>
+<td>ComfyUI</td>
+<td>0.30.1</td>
+</tr>
+<tr>
+<td>Triton</td>
+<td>3.5.1</td>
+</tr>
+<tr>
+<td>SageAttention</td>
+<td>2.2.0</td>
+</tr>
+<tr>
+<td>comfy-aimdo</td>
+<td>0.4.11</td>
+</tr>
+<tr>
+<td>comfy-kitchen</td>
+<td>0.2.26</td>
+</tr>
+<tr>
+<td>分辨率</td>
+<td>768×1344</td>
+</tr>
+<tr>
+<td>视频长度</td>
+<td>362 帧，24 FPS</td>
+</tr>
+<tr>
+<td>采样步数</td>
+<td>20 steps</td>
+</tr>
+<tr>
+<td>随机种子</td>
+<td>42</td>
+</tr>
+<tr>
+<td>Sampler &#x2F; Scheduler</td>
+<td><code>res_multistep</code> &#x2F; <code>simple</code></td>
+</tr>
+</tbody></table>
+<h3 id="关于-CUDA-优化路径"><a href="#关于-CUDA-优化路径" class="headerlink" title="关于 CUDA 优化路径"></a>关于 CUDA 优化路径</h3><p>本次推理仍然运行在 H200 GPU 上，Sage 配置也确认启用了 SageAttention 的 CUDA kernel；但启动日志提示，当前 PyTorch 为 <code>cu128</code>，而 comfy-kitchen 的优化 CUDA&#x2F;Triton 算子要求 <code>cu130+</code>。因此，comfy-kitchen 的 CUDA 和 Triton 后端在本次测试中处于禁用状态，相关操作回退到 eager 实现。</p>
+<p>这不会使本次结果失效，但意味着表中的耗时代表“当前实际环境”的性能，而不是所有优化 CUDA 算子完整启用后的理论最佳性能。</p>
+<h2 id="使用的模型"><a href="#使用的模型" class="headerlink" title="使用的模型"></a>使用的模型</h2><table>
+<thead>
+<tr>
+<th>用途</th>
+<th>模型文件</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>T2VA 主模型</td>
+<td><code>minimax_h3_fl2va_pruned_bf16.safetensors</code></td>
+</tr>
+<tr>
+<td>文本编码器</td>
+<td><code>qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors</code></td>
+</tr>
+<tr>
+<td>视频 VAE</td>
+<td><code>minimax_h3_video_vae_fp16.safetensors</code></td>
+</tr>
+<tr>
+<td>音频 VAE</td>
+<td><code>minimax_h3_audio_vae_fp32.safetensors</code></td>
+</tr>
+</tbody></table>
+<p>主模型以 BF16 运行，文本编码器采用 NVFP4&#x2F;AWQ 量化，视频 VAE 为 FP16，音频 VAE 为 FP32。</p>
+<h2 id="Prompt"><a href="#Prompt" class="headerlink" title="Prompt"></a>Prompt</h2><p>原始分镜描述经过 MiniMax H3 的 Context-IR 前处理，整理为同时覆盖画面、动作、镜头和声音的实际推理 prompt。内容是一位老年图书修复师在安静修复室中修补古籍的 15 秒纪实镜头。</p>
+<details>
+<summary><strong>展开查看实际推理 Prompt</strong></summary>
+
+<figure class="highlight text"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">integrated_multimodal_description: [Shot 1] Cinematic, close-up shot with a slight handheld camera shake and a shallow depth of field, focusing on a wooden table in a quiet restoration room. Soft, natural afternoon window light spills from the left. An on-screen elderly male book restorer is mending a yellowed ancient book. His visible hands have thick finger joints, with tiny pieces of paper and dried paste stains embedded in the nail beds. He wears a gray cotton and linen work uniform with dark blue sleeves. His right hand uses metal tweezers to pick up a delicate, thin piece of repair paper featuring manually torn frayed edges and clearly visible fibers. He gently lays the paper over a damaged area of the ancient page, while the fingertips of his left hand press down on the patch with a steady, gentle motion. The camera smoothly pedestals up and tilts up, shifting focus from his hands to his face. The man has short gray hair with the temples shaved very short, and his face is marked by deep creases and age spots. His gaze is lowered, carefully observing the fit of the patch through a circular magnifying glass held near his eye. The natural light reveals intricate facial textures: real skin sagging, fine stubble, faint capillaries, and asymmetric eyebrow bones. He maintains a calm expression, blinking extremely slowly. He then straightens his upper body, takes the magnifying glass away from his face, and gently rubs the bridge of his nose with his right thumb and index finger, his shoulders dropping slightly in a subtle reaction of fatigue. Lowering his head again to inspect the mended page, his mouth twitches slightly at the corner, revealing a barely perceptible look of quiet relief.</span><br><span class="line"></span><br><span class="line">overall_soundscape: A hushed room tone establishes the quiet environment, punctuated by the audible, crisp rustle of thin paper fibers and the faint metallic click of tweezers. As the left hand presses the patch, a soft, dry rubbing sound is clearly heard against the ancient page. The continuous subtle rustle of heavy cotton and linen fabric accompanies his posture adjustments as he straightens up. A distinct skin-on-skin friction sound occurs as he rubs the bridge of his nose, followed by a soft, pronounced exhalation of breath.</span><br><span class="line"></span><br><span class="line">non_diegetic_music: N/A</span><br></pre></td></tr></table></figure>
+
+</details>
+
+<h2 id="加速配置与测试方法"><a href="#加速配置与测试方法" class="headerlink" title="加速配置与测试方法"></a>加速配置与测试方法</h2><table>
+<thead>
+<tr>
+<th>组件</th>
+<th>参数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>TE-Speed</td>
+<td><code>processing_control_value=0.12</code>、窗口 <code>10%–90%</code>、<code>mcs=2</code>、<code>device=auto</code>、<code>cache_depth=0.75</code></td>
+</tr>
+<tr>
+<td>EasyCache</td>
+<td><code>reuse_threshold=0.10</code>、窗口 <code>15%–95%</code></td>
+</tr>
+<tr>
+<td>SageAttention</td>
+<td>ComfyUI 服务使用 <code>--use-sage-attention</code></td>
+</tr>
+<tr>
+<td>非 Sage Attention</td>
+<td>ComfyUI 服务使用 <code>--use-pytorch-cross-attention</code></td>
+</tr>
+</tbody></table>
+<p>所有配置使用相同的 prompt、seed、分辨率、帧数、采样器和步数。Sage 与非 Sage 使用独立服务，ComfyUI 以 <code>--cache-none</code> 启动，避免相同输入命中节点结果缓存。表中记录单次正式运行的采样时间和端到端时间，因此结果适合展示当前环境下的实际趋势，不应视为多次重复统计后的通用 benchmark。</p>
+<h2 id="推理结果"><a href="#推理结果" class="headerlink" title="推理结果"></a>推理结果</h2><h3 id="非-Sage-路径"><a href="#非-Sage-路径" class="headerlink" title="非 Sage 路径"></a>非 Sage 路径</h3><table>
+<thead>
+<tr>
+<th>配置</th>
+<th align="right">采样时间</th>
+<th align="right">端到端时间</th>
+<th align="right">相对 Baseline</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Baseline</td>
+<td align="right">19 分 07 秒</td>
+<td align="right">19 分 43 秒</td>
+<td align="right">1.00×</td>
+<td>完成</td>
+</tr>
+<tr>
+<td>TE-Speed</td>
+<td align="right">10 分 23 秒</td>
+<td align="right">10 分 58 秒</td>
+<td align="right">1.80×</td>
+<td>完成</td>
+</tr>
+<tr>
+<td>EasyCache</td>
+<td align="right">13 分 22 秒</td>
+<td align="right">13 分 58 秒</td>
+<td align="right">1.41×</td>
+<td>完成</td>
+</tr>
+<tr>
+<td>TE-Speed + EasyCache</td>
+<td align="right">7 分 08 秒</td>
+<td align="right">7 分 44 秒</td>
+<td align="right">2.55×</td>
+<td>完成</td>
+</tr>
+</tbody></table>
+<p>在这次测试中，TE-Speed + EasyCache 获得了最快的完整推理结果，端到端耗时相比 Baseline 减少约 60.8%。</p>
+<h3 id="SageAttention-路径"><a href="#SageAttention-路径" class="headerlink" title="SageAttention 路径"></a>SageAttention 路径</h3><table>
+<thead>
+<tr>
+<th>配置</th>
+<th align="right">采样时间</th>
+<th align="right">端到端时间</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SageAttention</td>
+<td align="right">9 分 53 秒</td>
+<td align="right">10 分 30 秒</td>
+<td>完成，末尾模糊</td>
+</tr>
+<tr>
+<td>EasyCache + SageAttention</td>
+<td align="right">7 分 25 秒</td>
+<td align="right">8 分 02 秒</td>
+<td>完成，末尾模糊</td>
+</tr>
+<tr>
+<td>TE-Speed + SageAttention</td>
+<td align="right">—</td>
+<td align="right">—</td>
+<td>未完成</td>
+</tr>
+<tr>
+<td>TE-Speed + EasyCache + SageAttention</td>
+<td align="right">—</td>
+<td align="right">—</td>
+<td>未完成</td>
+</tr>
+</tbody></table>
+<p>SageAttention 单独使用，以及与 EasyCache 组合使用时可以完成推理；加入 TE-Speed 后，当前组合仍存在稳定性问题。</p>
+<p>由于两条异常结果唯一共同的加速组件是 SageAttention，而相同模型、prompt、seed 与采样设置下的非 Sage 视频末尾保持清晰，当前证据指向 <strong>SageAttention 在这条长时序 MiniMax H3 推理路径上的数值精度兼容性问题</strong>。</p>
+<blockquote>
+<p><strong>结果边界：</strong> 这组测试聚焦速度和运行完成情况，没有进行 SSIM、PSNR 或音频响度评估。因此，“最快”只表示耗时最低，不等同于生成质量最佳。</p>
+</blockquote>
+<h2 id="视频展示"><a href="#视频展示" class="headerlink" title="视频展示"></a>视频展示</h2><p>下面展示本次测试中全部 6 个成功生成的视频。每个视频均可通过自身控制条单独播放，以便清楚对比画面与音频效果。</p>
+<div class="h3-video-wall">
+<div class="h3-video-grid">
+<article class="h3-video-card"><div class="h3-video-card-title"><span>Baseline</span><small>19 分 43 秒</small></div><video controls preload="metadata" playsinline data-h3-video><source src="/video/non-sage/t2va/base_00001_.mp4" type="video/mp4"></video></article>
+<article class="h3-video-card"><div class="h3-video-card-title"><span>TE-Speed</span><small>10 分 58 秒 · 1.80×</small></div><video controls preload="metadata" playsinline data-h3-video><source src="/video/non-sage/t2va/te_00001_.mp4" type="video/mp4"></video></article>
+<article class="h3-video-card"><div class="h3-video-card-title"><span>EasyCache</span><small>13 分 58 秒 · 1.41×</small></div><video controls preload="metadata" playsinline data-h3-video><source src="/video/non-sage/t2va/easycache_00001_.mp4" type="video/mp4"></video></article>
+<article class="h3-video-card"><div class="h3-video-card-title"><span class="h3-video-card-label-compact">TE-Speed + EasyCache</span><small>7 分 44 秒 · 2.55×</small></div><video controls preload="metadata" playsinline data-h3-video><source src="/video/non-sage/t2va/te_easycache_00001_.mp4" type="video/mp4"></video></article>
+<article class="h3-video-card"><div class="h3-video-card-title"><span>SageAttention</span><small>10 分 30 秒</small></div><video controls preload="metadata" playsinline data-h3-video><source src="/video/sage/t2va/sageattention_00001_.mp4" type="video/mp4"></video></article>
+<article class="h3-video-card"><div class="h3-video-card-title"><span class="h3-video-card-label-compact">EasyCache + SageAttention</span><small>8 分 02 秒</small></div><video controls preload="metadata" playsinline data-h3-video><source src="/video/sage/t2va/easycache_sageattention_00001_.mp4" type="video/mp4"></video></article>
+</div>
+</div>
+
+<style>
+  .h3-video-wall { margin: 1.5rem 0; }
+  .h3-video-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+  .h3-video-card { overflow: hidden; border: 1px solid rgba(58, 74, 92, .13); border-radius: .8rem; background: rgba(255, 255, 255, .72); box-shadow: 0 .25rem .9rem rgba(30, 43, 61, .07); }
+  .h3-video-card-title { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; padding: .7rem .8rem; font-weight: 650; font-size: .95rem; }
+  .h3-video-card-label-compact { font-size: .78rem; letter-spacing: -.015em; line-height: 1.25; white-space: nowrap; }
+  .h3-video-card-title small { flex: none; color: #7a8491; font-size: .76rem; font-weight: 500; white-space: nowrap; }
+  .h3-video-card video { display: block; width: 100%; aspect-ratio: 9 / 16; background: #111; object-fit: contain; }
+  @media (max-width: 900px) { .h3-video-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .h3-video-grid { grid-template-columns: 1fr; } .h3-video-card-title { font-size: 1rem; } }
+</style>
+
+<p>TE-Speed + SageAttention 以及 TE-Speed + EasyCache + SageAttention 未生成可展示的视频。</p>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>这次测试表明，在当前 H200 环境中，ComfyUI 可以完成 MiniMax H3 的高分辨率音视频生成；TE-Speed 和 EasyCache 组合能够显著减少推理时间。SageAttention 路径虽然能够完成推理，但当前既有末尾清晰度问题，也与 TE-Speed 存在稳定性问题。</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>Author: </span><span class="post-copyright-info"><a href="https://fengqianiqan.github.io">Qian Feng</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>Link: </span><span class="post-copyright-info"><a href="https://fengqianiqan.github.io/posts/e851fb7f.html">https://fengqianiqan.github.io/posts/e851fb7f.html</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>Copyright Notice: </span><span class="post-copyright-info">All articles on this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless otherwise stated.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/MiniMax-H3/">MiniMax H3</a><a class="post-meta__tags" href="/tags/ComfyUI/">ComfyUI</a><a class="post-meta__tags" href="/tags/%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F/">推理加速</a></div><div class="post-share"><div class="social-share" data-image="/img/paidaxin.jpg" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/posts/2a1e6489.html" title="大模型基础"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">Next</div><div class="info-item-2">大模型基础</div></div><div class="info-2"><div class="info-item-1">显卡 GPU&#x2F;CPU、CUDA、TPU&#x2F;苹果、各种常见显卡介绍   CPU：通用，穿行强，AI计算慢，费电 GPU：并行强，功耗大，面积大 CUDA：指挥GPU干活的语言 TPU：Tensor Processing Unit 张量处理器，Genmini生态，云端&#x2F;数据中心，高并发高算力高功耗 NPU：Nerual Processing Unit 神经网络处理器，AI专用，硬件级优化矩阵乘加（MAC），低延迟，高效能比，手机&#x2F;PC&#x2F;摄像头，华为&#x2F;苹果&#x2F;高通，低功耗实时推理  模型量化、加速、剪枝 模型量化：把模型中原本使用的高精度浮点数（FP32）表示的权重和激活值映射到低精度（FP16&#x2F;BF16&#x2F;INT8&#x2F;INT4），下面是一些基础量化方法： PTQ 训练后量化——模型训练完成后直接对权重进行转换，优点：速度快；缺点：在极低精度下有明显的精度损失 QAT 量化感知训练——在模型训练或微调的最后阶段，在前向传播中模拟量化误差，通过反向传播让模型学习适应误差；优点：精度保持得好；缺点计...</div></div></div></a></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/paidaxin.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">Qian Feng</div><div class="author-info-description"></div><div class="site-data"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">3</div></a><a href="/tags/"><div class="headline">Tags</div><div class="length-num">5</div></a><a href="/categories/"><div class="headline">Categories</div><div class="length-num">3</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/fengqianiqan"><i class="fab fa-github"></i><span>Follow Me</span></a></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>Announcement</span></div><div class="announcement_content">欢迎来到我的技术空间！🚀 <br>目前深耕 <b>大模型工程化 (RAG/微调)</b> 与 <b>计算机视觉</b> <br> 欢迎技术交流！</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Contents</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#MiniMax-H3-%C3%97-ComfyUI%EF%BC%9AH200-%E4%B8%8A%E7%9A%84%E9%9F%B3%E8%A7%86%E9%A2%91%E7%94%9F%E6%88%90%E4%B8%8E%E6%8E%A8%E7%90%86%E5%8A%A0%E9%80%9F"><span class="toc-number">1.</span> <span class="toc-text">MiniMax H3 × ComfyUI：H200 上的音视频生成与推理加速</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%8E%AF%E5%A2%83%E4%B8%8E%E6%8E%A8%E7%90%86%E9%85%8D%E7%BD%AE"><span class="toc-number">1.1.</span> <span class="toc-text">环境与推理配置</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%B3%E4%BA%8E-CUDA-%E4%BC%98%E5%8C%96%E8%B7%AF%E5%BE%84"><span class="toc-number">1.1.1.</span> <span class="toc-text">关于 CUDA 优化路径</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8%E7%9A%84%E6%A8%A1%E5%9E%8B"><span class="toc-number">1.2.</span> <span class="toc-text">使用的模型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Prompt"><span class="toc-number">1.3.</span> <span class="toc-text">Prompt</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A0%E9%80%9F%E9%85%8D%E7%BD%AE%E4%B8%8E%E6%B5%8B%E8%AF%95%E6%96%B9%E6%B3%95"><span class="toc-number">1.4.</span> <span class="toc-text">加速配置与测试方法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8E%A8%E7%90%86%E7%BB%93%E6%9E%9C"><span class="toc-number">1.5.</span> <span class="toc-text">推理结果</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%9D%9E-Sage-%E8%B7%AF%E5%BE%84"><span class="toc-number">1.5.1.</span> <span class="toc-text">非 Sage 路径</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#SageAttention-%E8%B7%AF%E5%BE%84"><span class="toc-number">1.5.2.</span> <span class="toc-text">SageAttention 路径</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%86%E9%A2%91%E5%B1%95%E7%A4%BA"><span class="toc-number">1.6.</span> <span class="toc-text">视频展示</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%BB%93%E8%AF%AD"><span class="toc-number">1.7.</span> <span class="toc-text">结语</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>Recent Posts</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/posts/e851fb7f.html" title="MiniMax H3 × ComfyUI：H200 上的音视频生成与推理加速">MiniMax H3 × ComfyUI：H200 上的音视频生成与推理加速</a><time datetime="2026-08-13T10:00:00.000Z" title="Created 2026-08-13 18:00:00">2026-08-13</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/posts/2a1e6489.html" title="大模型基础">大模型基础</a><time datetime="2026-04-07T13:40:32.000Z" title="Created 2026-04-07 21:40:32">2026-04-07</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/posts/ca5ce5aa.html" title="基于langchain的个人科研小助手"><img src="/img/wallhaven-427p6y_1280x720.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="基于langchain的个人科研小助手"/></a><div class="content"><a class="title" href="/posts/ca5ce5aa.html" title="基于langchain的个人科研小助手">基于langchain的个人科研小助手</a><time datetime="2026-04-05T08:00:00.000Z" title="Created 2026-04-05 16:00:00">2026-04-05</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By Qian Feng</span><span class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 8.1.1</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.5.4</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Reading Mode"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="Toggle Between Light and Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle Between Single-column and Double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="Settings"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back to Top"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><div class="js-pjax"></div><script id="canvas_nest" defer="defer" color="0,255,255" opacity="0.7" zIndex="-1" count="150" mobile="true" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/canvas-nest.min.js"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">Search</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  Loading Database</span></div><div class="local-search-input"><input placeholder="Search for Posts" type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js?v=5.5.4"></script></div></div></body></html>
