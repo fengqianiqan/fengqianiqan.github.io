@@ -68,7 +68,7 @@ social:
 favicon: /img/favicon.png
 #头像
 avatar:
-  img: /img/paidaxin.png
+  img: /img/paidaxin.jpg
   effect: false
 
 # Disable all banner images
